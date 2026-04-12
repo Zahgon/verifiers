@@ -20,37 +20,22 @@ class RubricGroup(Rubric):
         self.logger.debug(f"Initialized RubricGroup with {len(rubrics)} rubrics")
 
     def _get_reward_func_names(self) -> list[str]:
-        names = []
-        for rubric in self.rubrics:
-            names.extend(rubric._get_reward_func_names())
-        return names
+        pass
 
     def _get_reward_funcs(self) -> list[RewardFunc]:
-        funcs = []
-        for rubric in self.rubrics:
-            funcs.extend(rubric._get_reward_funcs())
-        return funcs
+        pass
 
     def _get_reward_weights(self) -> list[float]:
-        weights = []
-        for rubric in self.rubrics:
-            weights.extend(rubric._get_reward_weights())
-        return weights
+        pass
 
     def add_reward_func(self, func: RewardFunc, weight: float = 1.0):
-        assert len(self.rubrics) > 0, "RubricGroup must have at least one rubric"
-        self.logger.warning("Adding reward function to the first rubric in the group.")
-        self.rubrics[0].add_reward_func(func, weight)
+        pass
 
     def add_metric(self, func: RewardFunc, weight: float = 0.0):
-        assert len(self.rubrics) > 0, "RubricGroup must have at least one rubric"
-        self.logger.warning("Adding metric to the first rubric in the group.")
-        self.rubrics[0].add_metric(func, weight)
+        pass
 
     def add_class_object(self, name: str, obj: Any):
-        assert len(self.rubrics) > 0, "RubricGroup must have at least one rubric"
-        self.logger.warning("Adding class object to the first rubric in the group.")
-        self.rubrics[0].add_class_object(name, obj)
+        pass
 
     async def score_rollout(self, state: State):
         """

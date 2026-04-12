@@ -43,11 +43,7 @@ class DOMMode:
 
     def register_tools(self, env) -> None:
         """Register DOM mode tools with the environment."""
-        self.logger = env.logger
-        env.add_tool(self.navigate, args_to_skip=["session"])
-        env.add_tool(self.observe, args_to_skip=["session", "llm_config"])
-        env.add_tool(self.act, args_to_skip=["session", "llm_config"])
-        env.add_tool(self.extract, args_to_skip=["session", "llm_config"])
+        pass
 
     def _get_api_key(self, state: vf.State) -> str | None:
         """Get API key for Stagehand operations.
@@ -149,16 +145,7 @@ class DOMMode:
 
     async def cleanup_session(self, state: vf.State) -> None:
         """Clean up Stagehand session after rollout."""
-        session = state.get("stagehand_session")
-        if session is not None:
-            try:
-                await session.end()
-            except Exception as e:
-                if self.logger:
-                    self.logger.warning(f"Error ending session: {e}")
-
-        state.pop("stagehand_session", None)
-        state.pop("stagehand_session_id", None)
+        pass
 
     async def teardown(self) -> None:
         """Clean up Stagehand client on environment teardown."""
@@ -181,11 +168,7 @@ class DOMMode:
         Args:
             url: The url to navigate to.
         """
-        try:
-            await session.navigate(url=url)
-            return f"Navigated to {url}"
-        except Exception as e:
-            return f"Error navigating to {url}: {str(e)}"
+        pass
 
     async def observe(
         self, instruction: str, session: Any, llm_config: Any = None
@@ -195,26 +178,7 @@ class DOMMode:
         Args:
             instruction: The instruction to find possible actions for.
         """
-        try:
-            if llm_config:
-                response = await session.observe(
-                    instruction=instruction, options={"model": llm_config}
-                )
-            else:
-                response = await session.observe(instruction=instruction)
-            actions = [
-                {
-                    "description": a.description,
-                    "selector": a.selector,
-                    "method": a.method,
-                }
-                for a in response.data.result
-            ]
-            if not actions:
-                return "No matching elements found"
-            return json.dumps(actions, indent=2)
-        except Exception as e:
-            return f"Error observing page: {str(e)}"
+        pass
 
     async def act(self, instruction: str, session: Any, llm_config: Any = None) -> str:
         """Tool to request an action be performed on the current page.
@@ -227,18 +191,7 @@ class DOMMode:
         Args:
             instruction: The instruction to perform an action for.
         """
-        try:
-            if llm_config:
-                response = await session.act(
-                    input=instruction, options={"model": llm_config}
-                )
-            else:
-                response = await session.act(input=instruction)
-            result = response.data.result
-            status = "Success" if result.success else "Failed"
-            return f"{status}: {result.message}"
-        except Exception as e:
-            return f"Error executing action: {str(e)}"
+        pass
 
     async def extract(
         self,

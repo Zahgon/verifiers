@@ -100,22 +100,7 @@ def _dedupe_tools(
     context: str,
     reserved_names: set[str] | None = None,
 ) -> tuple[list[Callable], dict[str, Callable]]:
-    deduped: list[Callable] = []
-    seen: dict[str, Callable] = {}
-    for tool in tools:
-        name = _tool_display_name(tool)
-        if reserved_names and name in reserved_names:
-            raise ValueError(f"Tool '{name}' is reserved and cannot be overridden.")
-        if name in seen:
-            if seen[name] is not tool:
-                raise ValueError(
-                    f"Tool name collision in {context}: '{name}' is defined by both "
-                    f"{seen[name]!r} and {tool!r}. Rename or remove one."
-                )
-            continue
-        seen[name] = tool
-        deduped.append(tool)
-    return deduped, seen
+    pass
 
 
 def _merge_tool_lists(
@@ -125,24 +110,7 @@ def _merge_tool_lists(
     context: str,
     reserved_names: set[str],
 ) -> tuple[list[Callable], dict[str, Callable]]:
-    fixed, fixed_map = _dedupe_tools(
-        fixed_tools,
-        context=f"{context} fixed tools",
-        reserved_names=set(),
-    )
-    merged = list(fixed)
-    deduped_role, _ = _dedupe_tools(
-        role_tools,
-        context=f"{context} tools",
-        reserved_names=reserved_names,
-    )
-    merged.extend(deduped_role)
-    deduped_all, deduped_map = _dedupe_tools(
-        merged,
-        context=context,
-        reserved_names=set(),
-    )
-    return deduped_all, deduped_map
+    pass
 
 
 class SubLLMEmptyModelResponseError(vf.EmptyModelResponseError):
@@ -303,13 +271,7 @@ def _ensure_rlm_metric_state(state: State) -> None:
 
 
 def _update_rlm_repl_metrics(state: State, execution_seconds: float) -> None:
-    _ensure_rlm_metric_state(state)
-    state["repl_total_time_seconds"] += execution_seconds
-    state["repl_call_count"] += 1
-    if state["repl_call_count"] > 0:
-        state["repl_mean_time_seconds"] = (
-            state["repl_total_time_seconds"] / state["repl_call_count"]
-        )
+    pass
 
 
 def update_rlm_metrics_from_step(state: State, step: TrajectoryStep) -> None:
@@ -362,33 +324,13 @@ def update_rlm_metrics_from_step(state: State, step: TrajectoryStep) -> None:
 
 
 def _update_root_tool_metrics(state: State, tool_name: str) -> None:
-    _ensure_rlm_metric_state(state)
-    state["root_tool_call_count"] += 1
-    tool_calls: dict[str, int] = state.get("root_tool_calls", {})
-    tool_calls[tool_name] = tool_calls.get(tool_name, 0) + 1
-    state["root_tool_calls"] = tool_calls
+    pass
 
 
 def _update_root_tool_time_metrics(
     state: State, tool_name: str, elapsed_seconds: float
 ) -> None:
-    _ensure_rlm_metric_state(state)
-    tool_times: dict[str, float] = state.get("root_tool_times", {})
-    tool_times[tool_name] = tool_times.get(tool_name, 0.0) + elapsed_seconds
-    state["root_tool_times"] = tool_times
-    if tool_name == "llm_batch":
-        state["_llm_batch_total_time"] += elapsed_seconds
-        state["_llm_batch_time_count"] += 1
-        state["llm_batch_mean_time_seconds"] = (
-            state["_llm_batch_total_time"] / state["_llm_batch_time_count"]
-        )
-    else:
-        state["_root_tool_non_llm_total_time"] += elapsed_seconds
-        state["_root_tool_non_llm_time_count"] += 1
-        state["root_tool_non_llm_mean_time_seconds"] = (
-            state["_root_tool_non_llm_total_time"]
-            / state["_root_tool_non_llm_time_count"]
-        )
+    pass
 
 
 class RLMMonitorRubric(vf.Rubric):
@@ -434,28 +376,13 @@ class RLMMonitorRubric(vf.Rubric):
             self.add_metric(self._make_root_tool_time_metric(tool_name))
 
     def _make_state_metric(self, key: str):
-        async def metric(state: State):
-            value = state.get(key, 0)
-            return 0 if value is None else value
-
-        metric.__name__ = key
-        return metric
+        pass
 
     def _make_root_tool_metric(self, tool_name: str):
-        async def root_tool_metric(state: State) -> int:
-            tool_calls: dict[str, int] = state.get("root_tool_calls", {})
-            return int(tool_calls.get(tool_name, 0))
-
-        root_tool_metric.__name__ = f"{tool_name}_root_calls"
-        return root_tool_metric
+        pass
 
     def _make_root_tool_time_metric(self, tool_name: str):
-        async def root_tool_time_metric(state: State) -> float:
-            tool_times: dict[str, float] = state.get("root_tool_times", {})
-            return float(tool_times.get(tool_name, 0.0))
-
-        root_tool_time_metric.__name__ = f"{tool_name}_root_time_seconds"
-        return root_tool_time_metric
+        pass
 
 
 class SubLLMTurn(TypedDict):
@@ -1549,20 +1476,7 @@ class RLMExecutor(SandboxMixin):
         await self._start_worker(session, state)
 
     async def execute(self, payload: dict[str, Any], state: State) -> RLMExecResult:
-        session = self._get_session(state)
-        if not session.sandbox_id or not session.paths:
-            raise RLMSessionError("Sandbox session not initialized")
-
-        try:
-            raw = await self._send_worker_request(session, payload)
-        except RLMSandboxCommandTimeout as e:
-            raise RLMCodeExecutionTimeout from e
-        except RLMCodeExecutionTimeout:
-            raise
-        except Exception as e:
-            raise vf.SandboxError(f"Sandbox command failed: {e}") from e
-
-        return RLMExecResult(stdout=raw, stderr="")
+        pass
 
     async def read_answer(self, state: State) -> str:
         session = self._sessions.get(state.get("rollout_id", ""))
@@ -1586,20 +1500,7 @@ class RLMExecutor(SandboxMixin):
             return ""
 
     async def recover_from_timeout(self, state: State) -> bool:
-        session = self._sessions.get(state.get("rollout_id", ""))
-        if not session or not session.sandbox_id or not session.paths:
-            logger.error("Cannot recover from timeout: missing sandbox session")
-            return False
-        try:
-            await self._stop_worker(session)
-            await self._write_sandbox_files(session, state)
-            await self._start_worker(session, state)
-        except Exception as e:
-            logger.error(f"Failed to recover from code timeout: {e}")
-            return False
-        state["rlm_worker_ready"] = True
-        state["_exec_seq"] = 0
-        return True
+        pass
 
     async def cleanup(self, state: State) -> None:
         rollout_id = state.get("rollout_id")
@@ -1937,108 +1838,7 @@ class RLMExecutor(SandboxMixin):
     async def _send_worker_request(
         self, session: SandboxRLMReplSession, payload: dict[str, Any]
     ) -> str:
-        assert session.paths is not None
-        sandbox_id = session.sandbox_id
-        if not sandbox_id:
-            raise RLMSessionError("Sandbox not initialized")
-        payload_json = json.dumps(payload)
-        payload_b64 = base64.b64encode(payload_json.encode("utf-8")).decode("utf-8")
-        timeout_seconds = int(self.env.code_execution_timeout)
-        alive_check = (
-            f'[ -f "{session.paths.worker_pid_file}" ] '
-            f'&& [ -d "/proc/$(cat {session.paths.worker_pid_file})" ] '
-            '|| { echo "WORKER_DEAD"; exit 0; }'
-        )
-        command = textwrap.dedent(
-            f"""
-            {alive_check}
-            python - <<'PY'
-    import base64
-    import errno
-    import json
-    import os
-    import select
-    import sys
-    import time
-
-    data = base64.b64decode('{payload_b64}').decode('utf-8')
-    command_fifo = '{session.paths.command_fifo}'
-    response_fifo = '{session.paths.response_fifo}'
-    timeout_seconds = {timeout_seconds}
-    deadline = time.time() + timeout_seconds
-
-    try:
-        cmd_fd = os.open(command_fifo, os.O_WRONLY | os.O_NONBLOCK)
-    except OSError as exc:
-        if exc.errno in (errno.ENXIO, errno.ENOENT):
-            print("WORKER_DEAD")
-            sys.exit(0)
-        raise
-    try:
-        payload_bytes = data.encode("utf-8")
-        remaining = payload_bytes
-        while remaining:
-            try:
-                written = os.write(cmd_fd, remaining)
-                remaining = remaining[written:]
-            except BlockingIOError:
-                now = time.time()
-                if now >= deadline:
-                    print("WORKER_TIMEOUT")
-                    sys.exit(0)
-                timeout = min(0.05, deadline - now)
-                _, writable, _ = select.select([], [cmd_fd], [], timeout)
-                if not writable:
-                    continue
-    finally:
-        os.close(cmd_fd)
-
-    try:
-        res_fd = os.open(response_fifo, os.O_RDONLY | os.O_NONBLOCK)
-    except OSError as exc:
-        if exc.errno in (errno.ENOENT,):
-            print("WORKER_DEAD")
-            sys.exit(0)
-        raise
-    chunks = []
-    try:
-        while True:
-            now = time.time()
-            if now >= deadline:
-                print("WORKER_TIMEOUT")
-                sys.exit(0)
-            timeout = min(0.05, deadline - now)
-            ready, _, _ = select.select([res_fd], [], [], timeout)
-            if not ready:
-                continue
-            chunk = os.read(res_fd, 4096)
-            if chunk:
-                chunks.append(chunk)
-                continue
-            if not chunks:
-                time.sleep(0.01)
-                continue
-            break
-    finally:
-        os.close(res_fd)
-    if not chunks:
-        print("WORKER_DEAD")
-        sys.exit(0)
-    sys.stdout.write(b"".join(chunks).decode("utf-8", errors="replace"))
-    PY
-            """
-        )
-        result = await self._execute_sandbox_command(
-            sandbox_id,
-            command,
-            timeout=self.env.code_execution_timeout,
-        )
-        raw_response = result.stdout or ""
-        if raw_response and raw_response.strip() == "WORKER_DEAD":
-            raise RLMCodeExecutionTimeout
-        if raw_response and raw_response.strip() == "WORKER_TIMEOUT":
-            raise RLMCodeExecutionTimeout
-        return raw_response
+        pass
 
     async def _upload_directory(
         self, sandbox_id: str, local_dir: str, remote_dir: str
@@ -2586,32 +2386,7 @@ class RLMEnv(vf.StatefulToolEnv):
 
     def _build_fixed_root_tools(self) -> list[Callable]:
         """Return the fixed root REPL tools (non-overridable)."""
-        tools: list[Callable] = []
-
-        if self.enable_sub_llms:
-
-            async def llm_batch(prompts: list[str]) -> list[str]:
-                """
-                Dispatch prompts to fresh instances of your own model in parallel.
-                Each call gets an independent context window — they cannot see
-                your conversation or each other's responses.
-
-                - Input: a list of prompt strings.
-                - Output: a list of responses in the same order as the input prompts.
-                - Use this inside the REPL to delegate sub-tasks.
-                """
-                # Context is injected only when called via the REPL root-tool endpoint.
-                context = self._root_tool_context_var.get()
-                if context is None:
-                    raise RuntimeError(
-                        "llm_batch called outside of a tool request context."
-                    )
-                return await self._root_llm_batch(context, prompts)
-
-            llm_batch.__name__ = "llm_batch"
-            tools.append(llm_batch)
-
-        return tools
+        pass
 
     def _build_worker_env_vars(self, state: State) -> dict[str, str]:
         return {
@@ -2681,20 +2456,7 @@ class RLMEnv(vf.StatefulToolEnv):
         self, tool_name: str, tool_args: dict, tool_call_id: str
     ) -> ToolMessage:
         """Execute a sub-agent tool call. Returns tool message."""
-        try:
-            tool_func = self.sub_tool_map[tool_name]
-            result = await maybe_await(tool_func, **tool_args)
-            return ToolMessage(
-                tool_call_id=tool_call_id,
-                content=str(result),
-            )
-        except Exception as e:
-            if self._should_stop_for_error(e):
-                raise
-            return ToolMessage(
-                tool_call_id=tool_call_id,
-                content=f"Error: {e}",
-            )
+        pass
 
     async def _call_sub_llm_api(
         self,
@@ -2705,40 +2467,7 @@ class RLMEnv(vf.StatefulToolEnv):
         tools: list[vf.Tool] | None = None,
     ) -> Response | None:
         """Make a single sub-LLM API call matching main-model request mode."""
-        sampling_args = dict(state.get("sampling_args") or {})
-        extra_body = sampling_args.get("extra_body")
-        if isinstance(extra_body, dict):
-            sampling_args["extra_body"] = dict(extra_body)
-
-        try:
-            # Use a minimal state with an empty trajectory so get_model_response
-            # never tries to compute interleaved prompt_ids from the main rollout.
-            # Sub-LLM prompts are independent tool calls, not continuations of the
-            # root conversation; using the real state would treat them as such.
-            # We also mirror sampling_args/tool_defs onto the fake state because
-            # get_model_response falls back to state values when args are falsy
-            # (e.g., {} or None), which would otherwise raise KeyError.
-            prompt_state = State()
-            prompt_state["trajectory"] = []
-            prompt_state["sampling_args"] = sampling_args
-            prompt_state["tool_defs"] = tools or []
-            return await asyncio.wait_for(
-                self.get_model_response(
-                    prompt_state,
-                    cast(Messages, messages),
-                    client=client,
-                    model=model,
-                    tool_defs=tools,
-                ),
-                timeout=self.sub_llm_timeout,
-            )
-        except asyncio.TimeoutError:
-            logger.warning(f"Sub-LLM API call timed out after {self.sub_llm_timeout}s")
-            return None
-        except vf.EmptyModelResponseError as e:
-            raise SubLLMEmptyModelResponseError(str(e)) from e
-        except Exception as e:
-            raise e
+        pass
 
     def _make_timeout_result(
         self,
@@ -2749,15 +2478,7 @@ class RLMEnv(vf.StatefulToolEnv):
         num_turns: int,
     ) -> SubLLMResult:
         """Create a SubLLMResult for timeout cases."""
-        return SubLLMResult(
-            final_content=f"Error: Sub-LLM API call timed out after {self.sub_llm_timeout}s",
-            turns=turns,
-            total_prompt_tokens=total_prompt_tokens,
-            total_completion_tokens=total_completion_tokens,
-            tool_call_count=tool_call_count,
-            num_turns=num_turns,
-            max_turns_reached=True,
-        )
+        pass
 
     async def _run_sub_llm(
         self, state: State, client: Client, model: str, messages: Messages
@@ -2918,14 +2639,7 @@ class RLMEnv(vf.StatefulToolEnv):
 
     def _sub_llm_budget_exhausted_message(self, state_ref: State) -> str:
         """Build a human-readable budget-exhausted message."""
-        used = state_ref.get("sub_llm_completion_tokens", 0)
-        budget = self.sub_max_completion_tokens
-        return (
-            f"llm_batch token budget exhausted "
-            f"(used {used}/{budget} completion tokens). "
-            f"No further llm_batch calls are available. "
-            f"Finalize your answer with the information you have."
-        )
+        pass
 
     async def _root_llm_batch(
         self,
@@ -2933,99 +2647,7 @@ class RLMEnv(vf.StatefulToolEnv):
         prompts: list[Any],
     ) -> list[str]:
         """Run a batch of sub-LLM calls for root REPL usage."""
-        if not isinstance(prompts, list):
-            raise ValueError("llm_batch expects a list of prompts.")
-
-        client = context.get("client")
-        sub_model = context.get("sub_model") or context.get("model")
-        state_ref = context.get("state")
-        parent_turn = context.get("parent_turn", 0)
-        if not client or not sub_model or state_ref is None:
-            raise RuntimeError("Sub-LLM context is not available.")
-
-        # Early exit when budget is already exhausted before starting the batch.
-        if self.sub_max_completion_tokens is not None:
-            used = state_ref.get("sub_llm_completion_tokens", 0)
-            if used >= self.sub_max_completion_tokens:
-                msg = self._sub_llm_budget_exhausted_message(state_ref)
-                return [msg] * len(prompts)
-
-        rid = state_ref.get("rollout_id", "?")
-
-        batch_start = perf_counter()
-        batch_id = uuid.uuid4().hex[:8]
-        logger.debug(
-            "[%s] main turn %d: llm_batch called with %d prompts (batch=%s)",
-            rid,
-            parent_turn,
-            len(prompts),
-            batch_id,
-        )
-        results: list[dict[str, Any] | None] = [
-            cast(dict[str, Any] | None, None)
-        ] * len(prompts)
-        semaphore = asyncio.Semaphore(self.max_sub_llm_parallelism)
-
-        def _coerce_prompt_messages(prompt: Any, index: int) -> Messages:
-            if isinstance(prompt, str):
-                return [UserMessage(content=prompt)]
-            raise ValueError(
-                "llm_batch prompt at index " + str(index) + " must be a string."
-            )
-
-        async def _call_one(index: int, prompt: Any) -> None:
-            async with semaphore:
-                request_id = uuid.uuid4().hex[:8]
-                try:
-                    messages = _coerce_prompt_messages(prompt, index)
-                    response_dict = await self._run_sub_llm_request(
-                        state_ref=state_ref,
-                        client=client,
-                        sub_model=sub_model,
-                        messages=messages,
-                        batch_id=batch_id,
-                        request_id=request_id,
-                        parent_turn=parent_turn,
-                    )
-                except Exception as exc:
-                    if self._should_stop_for_error(exc):
-                        raise
-                    response_dict = {
-                        "choices": [
-                            {"message": {"content": f"Error in sub-LLM call: {exc}"}}
-                        ],
-                        "_rlm_metadata": {
-                            "error": True,
-                        },
-                    }
-                results[index] = response_dict
-
-        await asyncio.gather(
-            *[_call_one(i, prompt) for i, prompt in enumerate(prompts)]
-        )
-
-        batch_elapsed = perf_counter() - batch_start
-        succeeded = sum(
-            1 for r in results if r and not r.get("_rlm_metadata", {}).get("error")
-        )
-        logger.debug(
-            "[%s] main turn %d: llm_batch done in %.2fs, %d/%d succeeded (batch=%s)",
-            rid,
-            parent_turn,
-            batch_elapsed,
-            succeeded,
-            len(prompts),
-            batch_id,
-        )
-        contents: list[str] = []
-        for result in results:
-            if not result:
-                contents.append("")
-                continue
-            message = result.get("choices", [{}])[0].get("message", {})
-            contents.append(message.get("content", ""))
-
-        return contents
+        pass
 
     # =========================================================================
     # Interception Server (for sub-LLM calls from worker code)
@@ -3232,87 +2854,7 @@ class RLMEnv(vf.StatefulToolEnv):
 
     async def _handle_root_tool_request(self, request: Any) -> Any:
         """Handle root tool requests from worker."""
-        rollout_id = request.match_info["rollout_id"]
-        context = self.active_rollouts.get(rollout_id)
-        if not context:
-            return web.json_response({"error": "Rollout not found"}, status=404)
-
-        try:
-            request_body = await request.json()
-        except Exception as e:
-            return web.json_response({"error": f"Invalid JSON: {e}"}, status=400)
-
-        tool_name = request_body.get("tool_name", "")
-        if not tool_name:
-            return web.json_response({"error": "Tool name not provided"}, status=400)
-        if tool_name not in self.root_tool_map:
-            return web.json_response(
-                {"error": f"Tool '{tool_name}' not found"}, status=404
-            )
-
-        state_ref = context.get("state")
-        if state_ref is None:
-            return web.json_response({"error": "State not available"}, status=500)
-
-        args_raw = request_body.get("args", [])
-        kwargs_raw = request_body.get("kwargs", {})
-        if not isinstance(args_raw, list):
-            return web.json_response({"error": "args must be a JSON array"}, status=400)
-        if not isinstance(kwargs_raw, dict):
-            return web.json_response(
-                {"error": "kwargs must be a JSON object"}, status=400
-            )
-        args = tuple(args_raw)
-        kwargs = kwargs_raw
-
-        parent_turn = context.get("current_turn", 0)
-        root_tool_context = {
-            "state": state_ref,
-            "client": context.get("client"),
-            "sub_model": context.get("sub_model") or context.get("model"),
-            "parent_turn": parent_turn,
-        }
-        token = self._root_tool_context_var.set(root_tool_context)
-        tool_start = perf_counter()
-        try:
-            _update_root_tool_metrics(state_ref, tool_name)
-            tool_func = self.root_tool_map[tool_name]
-            if tool_name == "llm_batch":
-                if args and "prompts" in kwargs:
-                    raise ValueError("llm_batch received prompts twice.")
-                if args:
-                    if len(args) != 1:
-                        raise ValueError("llm_batch expects a single prompts argument.")
-                    prompts = args[0]
-                elif "prompts" in kwargs:
-                    prompts = kwargs.pop("prompts")
-                else:
-                    raise ValueError("llm_batch requires a prompts argument.")
-                if kwargs:
-                    raise ValueError(
-                        "llm_batch does not accept extra keyword arguments: "
-                        + ", ".join(sorted(kwargs))
-                    )
-                result_value = await self._root_llm_batch(root_tool_context, prompts)
-            else:
-                result_value = await maybe_await(tool_func, *args, **kwargs)
-        except Exception as e:
-            if self._should_stop_for_error(e):
-                state_ref["_rlm_stop_error"] = e
-            return web.json_response({"error": str(e)}, status=500)
-        finally:
-            _update_root_tool_time_metrics(
-                state_ref, tool_name, perf_counter() - tool_start
-            )
-            self._root_tool_context_var.reset(token)
-
-        response_body: dict[str, Any] = {}
-        try:
-            json.dumps(result_value)
-            response_body["result"] = result_value
-        except (TypeError, ValueError):
-            response_body["result_repr"] = repr(result_value)
-        return web.json_response(response_body)
+        pass
 
     async def _handle_sub_llm_request(self, request: Any) -> Any:
         """Handle sub-LLM requests from worker code."""
@@ -3394,7 +2936,7 @@ class RLMEnv(vf.StatefulToolEnv):
     @vf.teardown
     async def teardown_interception_server(self):
         """Stop the interception server if it was started."""
-        await self._teardown_interception_server()
+        pass
 
     async def _teardown_tunnel(self) -> None:
         """Stop Prime Tunnel if it was started."""
@@ -3411,12 +2953,12 @@ class RLMEnv(vf.StatefulToolEnv):
     @vf.teardown
     async def teardown_tunnel(self):
         """Stop Prime Tunnel if it was started."""
-        await self._teardown_tunnel()
+        pass
 
     @vf.teardown
     async def teardown_executor(self):
         """Cleanup executor-level resources (e.g., sandbox sessions)."""
-        await self._executor.teardown()
+        pass
 
     # =========================================================================
     # State Management
@@ -3551,159 +3093,21 @@ class RLMEnv(vf.StatefulToolEnv):
 
     async def _recover_from_code_timeout(self, state: State) -> bool:
         """Attempt to recover from a code execution timeout via the active backend."""
-        return await self._executor.recover_from_timeout(state)
+        pass
 
     async def _execute_code(self, code: str, state: State) -> dict[str, Any]:
         """Execute code in worker and return result."""
-        if not state.get("rlm_worker_ready", False):
-            await self._executor.prepare_filesystem(state)
-            await self._executor.setup(state)
-            state["rlm_worker_ready"] = True
-        # Increment and track sequence number for this execution
-        seq = state.get("_exec_seq", 0) + 1
-        state["_exec_seq"] = seq
-
-        payload = {"code": code, "seq": seq}
-        try:
-            result = await self._executor.execute(payload, state)
-        except RLMCodeExecutionTimeout as e:
-            logger.warning(
-                "Code execution timed out after %ss", self.code_execution_timeout
-            )
-            if self.abort_on_code_timeout:
-                raise
-            recovered = await self._recover_from_code_timeout(state)
-            if not recovered:
-                raise RLMWorkerRecoveryError(
-                    "Code execution timed out and the worker could not be restarted."
-                ) from e
-            # Return error to model so it can try more efficient code
-            return {
-                "status": "error",
-                "stdout": "",
-                "stderr": "",
-                "result": (
-                    f"Code execution timed out after {self.code_execution_timeout} seconds."
-                    " The worker was restarted and the REPL state was reset."
-                    " Your code may be too slow - consider a more "
-                    "efficient algorithm or breaking the computation into smaller steps."
-                ),
-                "answer": {"ready": False, "content": ""},
-            }
-
-        if not result.stdout:
-            return {
-                "status": "error",
-                "stdout": "",
-                "stderr": result.stderr or "",
-                "result": "Worker returned no output",
-                "answer": {"ready": False, "content": ""},
-            }
-
-        try:
-            parsed_result = json.loads(result.stdout)
-        except json.JSONDecodeError as e:
-            return {
-                "status": "error",
-                "stdout": result.stdout,
-                "stderr": result.stderr or "",
-                "result": f"Failed to parse worker response: {e}",
-                "answer": {"ready": False, "content": ""},
-            }
-
-        # Check sequence number to detect stale responses (FIFO desync)
-        response_seq = parsed_result.get("seq", -1)
-        if response_seq != seq:
-            logger.warning(
-                f"FIFO sequence mismatch: expected seq={seq}, got seq={response_seq}. "
-                "This indicates a desync - likely from a previous timeout."
-            )
-            return {
-                "status": "error",
-                "stdout": "",
-                "stderr": "",
-                "result": (
-                    f"Communication desync detected: received stale response "
-                    f"(expected seq={seq}, got seq={response_seq}). "
-                    "This may happen after a timeout. Please retry your command."
-                ),
-                "answer": {"ready": False, "content": ""},
-            }
-
-        return parsed_result
+        pass
 
     def _format_execution_output(self, result: dict[str, Any]) -> str:
         """Format execution result for display to model."""
-        if self.repl_language == "bash":
-            stdout = result.get("stdout") or ""
-            stderr = result.get("stderr") or ""
-            result_text = result.get("result") or ""
-            output = f"{stdout}{stderr}"
-            if not output and result_text:
-                output = str(result_text)
-            if not output:
-                output = "(no output)"
-            if len(output) > self.max_output_length:
-                output = output[: self.max_output_length] + "\n... [output truncated]"
-            return output
-
-        parts: list[str] = []
-
-        stdout = (result.get("stdout") or "").rstrip()
-        if stdout:
-            parts.append(stdout)
-
-        stderr = (result.get("stderr") or "").rstrip()
-        if stderr:
-            parts.append(f"stderr:\n{stderr}")
-
-        status = result.get("status")
-        result_text = result.get("result")
-        execution_count = result.get("execution_count", 0)
-
-        if status == "error" and result_text:
-            parts.append(result_text.rstrip())
-        elif status == "ok" and result_text is not None:
-            parts.append(f"Out[{execution_count}]: {result_text}")
-
-        output = "\n".join(parts) if parts else "(no output)"
-
-        # Truncate if too long
-        if len(output) > self.max_output_length:
-            output = output[: self.max_output_length] + "\n... [output truncated]"
-
-        return output
+        pass
 
     def _maybe_add_context_warning(
         self, output: str, state: State, *, ready_instruction: str
     ) -> str:
         """Append a context-limit warning if nearing max_seq_len."""
-        if not self.max_seq_len or state.get("context_warning_sent"):
-            return output
-
-        trajectory = state.get("trajectory", [])
-        last_main = next(
-            (
-                step
-                for step in reversed(trajectory)
-                if not step.get("extras", {}).get("is_sub_llm_call")
-            ),
-            None,
-        )
-        response = last_main.get("response") if last_main else None
-        usage = getattr(response, "usage", None) if response else None
-        prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0 if usage else 0
-        warning_threshold = int(self.max_seq_len * self.context_warning_threshold)
-
-        if prompt_tokens >= warning_threshold:
-            state["context_warning_sent"] = True
-            pct = prompt_tokens / self.max_seq_len
-            output += (
-                f"\n\n[CONTEXT LIMIT WARNING] You have used {prompt_tokens:,} of "
-                f"{self.max_seq_len:,} tokens ({pct:.0%}). {ready_instruction}"
-            )
-
-        return output
+        pass
 
     # =========================================================================
     # Message History Upload
@@ -3711,49 +3115,11 @@ class RLMEnv(vf.StatefulToolEnv):
 
     def _build_message_history(self, state: State) -> list[dict[str, Any]]:
         """Build the serialized observable message history for `.messages`."""
-        messages = cast(Messages, state.get("_observable_messages", []))
-        serialized: list[dict[str, Any]] = []
-        for msg in messages:
-            if hasattr(msg, "model_dump"):
-                entry = msg.model_dump(exclude_none=True)
-            elif isinstance(msg, dict):
-                entry = dict(msg)
-            else:
-                continue
-            serialized.append(entry)
-        return serialized
+        pass
 
     async def _upload_message_history(self, state: State) -> None:
         """Overwrite `.messages` in the sandbox with the observable transcript."""
-        messages = self._build_message_history(state)
-
-        try:
-            session = self._executor._get_session(state)
-        except RLMSessionError:
-            return
-        assert session.sandbox_id is not None, "sandbox must be initialized"
-        fs_root = session.sandbox_fs_root or state.get("rlm_fs_root_remote", "")
-        remote_path = f"{fs_root}/.messages"
-
-        if messages:
-            lines = [json.dumps(msg, ensure_ascii=False) for msg in messages]
-            delta = "\n".join(lines) + "\n"
-            delta_b64 = base64.b64encode(delta.encode("utf-8")).decode("ascii")
-            cmd = (
-                f"mkdir -p {shlex.quote(fs_root)} && "
-                f"echo '{delta_b64}' | base64 -d > {shlex.quote(remote_path)}"
-            )
-        else:
-            cmd = f"mkdir -p {shlex.quote(fs_root)} && : > {shlex.quote(remote_path)}"
-
-        try:
-            await self._executor._execute_sandbox_command(
-                session.sandbox_id,
-                f"bash -lc {shlex.quote(cmd)}",
-                timeout=30,
-            )
-        except Exception as e:
-            logger.warning("Failed to upload message history: %s", e)
+        pass
 
     # =========================================================================
     # REPL Tool
@@ -3766,67 +3132,15 @@ class RLMEnv(vf.StatefulToolEnv):
         *,
         ready_instruction: str,
     ) -> str:
-        rollout_id = state.get("rollout_id")
-        if rollout_id and rollout_id in self.active_rollouts:
-            self.active_rollouts[rollout_id]["current_turn"] = self._main_turn_count(
-                state
-            )
-
-        rid = rollout_id or "?"
-        main_turn = self._main_turn_count(state)
-        logger.debug(
-            "[%s] main turn %d: repl called (%s, %d chars)",
-            rid,
-            main_turn,
-            self.repl_language,
-            len(code),
-        )
-
-        await self._upload_message_history(state)
-
-        execution_start = perf_counter()
-        result = await self._execute_code(code, state)
-        stop_exc = state.pop("_rlm_stop_error", None)
-        if stop_exc is not None:
-            raise stop_exc
-        execution_time = perf_counter() - execution_start
-        output = self._format_execution_output(result)
-
-        _update_rlm_repl_metrics(state, execution_time)
-
-        answer = result.get("answer", {})
-        answer_ready = answer.get("ready", False)
-        logger.debug(
-            "[%s] main turn %d: repl done in %.2fs, answer_ready=%s",
-            rid,
-            main_turn,
-            execution_time,
-            answer_ready,
-        )
-        if answer_ready:
-            state["final_answer"] = answer.get("content", "")
-
-        output = self._maybe_add_context_warning(
-            output, state, ready_instruction=ready_instruction
-        )
-
-        return output
+        pass
 
     async def call_bash_repl(self, code: str, state: Any) -> str:
         """Execute Bash commands in a persistent REPL environment."""
-        return await self._call_repl(
-            code,
-            state,
-            ready_instruction="Please finalize your answer soon by setting ANSWER_READY=1.",
-        )
+        pass
 
     async def call_python_repl(self, code: str, state: Any) -> str:
         """Execute Python code in a persistent REPL environment."""
-        return await self._call_repl(
-            code,
-            state,
-            ready_instruction="Please finalize your answer soon by setting answer['ready'] = True.",
-        )
+        pass
 
     async def summarize_turns(self, n_turns: int, summary: str, state: Any) -> str:
         """Drop the oldest n_turns from context and record a cumulative summary.
@@ -3842,107 +3156,7 @@ class RLMEnv(vf.StatefulToolEnv):
         Returns:
             The full cumulative summary (all prior summaries + this one).
         """
-        _ensure_rlm_metric_state(state)
-        rid = state.get("rollout_id", "?")
-        main_turn = self._main_turn_count(state)
-        keep_from = state.get("_keep_from_assistant_index", 0)
-        visible_turns = main_turn - keep_from
-        max_droppable = max(0, visible_turns - self.min_turns_in_context)
-
-        if n_turns == -1:
-            n_turns = max_droppable
-
-        if n_turns <= 0:
-            logger.debug(
-                "[%s] main turn %d: summarize_turns: nothing to drop "
-                "(n_turns=%d, %d visible)",
-                rid,
-                main_turn,
-                n_turns,
-                visible_turns,
-            )
-            state["summarize_rejected_count"] += 1
-            return (
-                f"Nothing to drop (n_turns={n_turns}). "
-                f"Currently {visible_turns} turn(s) visible in context."
-            )
-
-        if n_turns > max_droppable:
-            logger.warning(
-                "[%s] main turn %d: summarize_turns rejected: requested %d turn(s) "
-                "but max droppable is %d (%d visible, min=%d)",
-                rid,
-                main_turn,
-                n_turns,
-                max_droppable,
-                visible_turns,
-                self.min_turns_in_context,
-            )
-            state["summarize_rejected_count"] += 1
-            return (
-                f"Cannot drop {n_turns} turn(s). "
-                f"You have {visible_turns} turn(s) visible in context and "
-                f"min_turns_in_context={self.min_turns_in_context}. "
-                f"Maximum droppable: {max_droppable}. No turns were dropped."
-            )
-
-        # Compute absolute turn range (1-indexed for display)
-        range_start = keep_from + 1
-        range_end = keep_from + n_turns
-
-        # Compute chars of dropped messages
-        chars_dropped = self._compute_dropped_chars(state, n_turns)
-
-        # Update state
-        state["_keep_from_assistant_index"] = keep_from + n_turns
-        new_visible = visible_turns - n_turns
-
-        # Append to cumulative summary
-        section = f"[Turns {range_start}-{range_end}] {summary}"
-        prev_summary = state.get("_summary_text", "")
-        state["_summary_text"] = (
-            f"{prev_summary}\n{section}" if prev_summary else section
-        )
-        self._refresh_observable_summary_insertion(state)
-
-        logger.debug(
-            "[%s] main turn %d: summarize_turns: %d turn(s) dropped "
-            "(%d visible -> %d visible, keep_from=%d)",
-            rid,
-            main_turn,
-            n_turns,
-            visible_turns,
-            new_visible,
-            state["_keep_from_assistant_index"],
-        )
-
-        # Update metrics
-        state["summarize_count"] += 1
-        state["summarize_total_turns_dropped"] += n_turns
-        state["summarize_total_chars_dropped"] += chars_dropped
-        state["summarize_summary_length_chars"] = len(state["_summary_text"])
-        if state["summarize_total_chars_dropped"] > 0:
-            state["summarize_char_compression_ratio"] = (
-                state["summarize_summary_length_chars"]
-                / state["summarize_total_chars_dropped"]
-            )
-        state["summarize_mean_turns_per_call"] = (
-            state["summarize_total_turns_dropped"] / state["summarize_count"]
-        )
-
-        remaining_list: list[int] = state["_summarize_remaining_turns_list"]
-        remaining_list.append(new_visible)
-        state["summarize_mean_remaining_turns"] = sum(remaining_list) / len(
-            remaining_list
-        )
-
-        at_turns: list[int] = state["_summarize_at_root_llm_turns"]
-        at_turns.append(main_turn)
-        if len(at_turns) >= 2:
-            gaps = [at_turns[i] - at_turns[i - 1] for i in range(1, len(at_turns))]
-            state["summarize_mean_turns_between"] = sum(gaps) / len(gaps)
-
-        return state["_summary_text"]
+        pass
 
     def _compute_dropped_chars(self, state: State, n_turns: int) -> int:
         """Compute the total character length of messages being dropped.
@@ -3952,49 +3166,7 @@ class RLMEnv(vf.StatefulToolEnv):
         following tool messages) in that prompt are exactly the ones being
         removed by this call.
         """
-        last_main = self._last_main_trajectory_step(state)
-        if last_main is None:
-            return 0
-        messages = concat_messages([last_main["prompt"], last_main["completion"]])
-
-        assistant_indices = [
-            i
-            for i, msg in enumerate(messages)
-            if getattr(msg, "role", None) == "assistant"
-            or (isinstance(msg, dict) and msg.get("role") == "assistant")
-        ]
-        if not assistant_indices or n_turns <= 0:
-            return 0
-
-        # Drop the first n_turns assistant messages (relative to the current
-        # already-truncated view).
-        drop_start = assistant_indices[0]
-        if n_turns >= len(assistant_indices):
-            drop_end = len(messages)
-        else:
-            drop_end = assistant_indices[n_turns]
-
-        total_chars = 0
-        for msg in messages[drop_start:drop_end]:
-            content = getattr(msg, "content", None)
-            if content is None:
-                # Count tool call arguments for assistant messages
-                tool_calls = getattr(msg, "tool_calls", None)
-                if tool_calls:
-                    for tc in tool_calls:
-                        total_chars += len(getattr(tc, "arguments", "") or "")
-                continue
-            if isinstance(content, str):
-                total_chars += len(content)
-            elif isinstance(content, list):
-                for part in content:
-                    if isinstance(part, dict):
-                        total_chars += len(str(part.get("text", "")))
-                    else:
-                        total_chars += len(str(part))
-            else:
-                total_chars += len(str(content))
-        return total_chars
+        pass
 
     def _last_main_trajectory_step(self, state: State) -> TrajectoryStep | None:
         """Find the last trajectory step belonging to the main (root) model."""
@@ -4174,24 +3346,7 @@ class RLMEnv(vf.StatefulToolEnv):
 
     def _refresh_observable_summary_insertion(self, state: State) -> None:
         """Move the cumulative summary block onto the current visible assistant turn."""
-        observable = cast(Messages, state.get("_observable_messages", []))
-        if not observable:
-            return
-
-        target_assistant_index = state.get("_keep_from_assistant_index", 0)
-        summary_text = state.get("_summary_text", "")
-        assistant_index = 0
-
-        for i, message in enumerate(observable):
-            if getattr(message, "role", None) != "assistant":
-                continue
-            if summary_text and assistant_index == target_assistant_index:
-                observable[i] = self._with_summary_on_assistant_message(
-                    message, summary_text
-                )
-            else:
-                observable[i] = self._with_summary_on_assistant_message(message, "")
-            assistant_index += 1
+        pass
 
     def _append_observable_messages(self, state: State, messages: Messages) -> None:
         """Append messages to the observable transcript."""
@@ -4245,33 +3400,22 @@ class RLMEnv(vf.StatefulToolEnv):
     @vf.stop
     async def answer_ready(self, state: State) -> bool:
         """Stop when model sets answer['ready'] = True."""
-        return "final_answer" in state
+        pass
 
     @vf.stop
     async def max_turns_reached(self, state: State) -> bool:
         """Count only main-model trajectory steps, not sub-LLM steps."""
-        if self.max_turns <= 0:
-            return False
-        return self._main_turn_count(state) >= self.max_turns
+        pass
 
     @vf.stop
     async def no_tools_called(self, state: State) -> bool:
         """Check last main-model completion for tool calls, ignoring sub-LLM steps."""
-        last_main = self._last_main_trajectory_step(state)
-        if last_main is None:
-            return False
-        last_message = cast(AssistantMessage, last_main["completion"][-1])
-        is_assistant = last_message.role == "assistant"
-        return is_assistant and not (last_message.tool_calls or [])
+        pass
 
     @vf.stop
     async def prompt_too_long(self, state: State) -> bool:
         """Stop when API returns overlong prompt error."""
-        if not state.get("prompt_too_long", False):
-            return False
-
-        await self._ensure_final_answer(state)
-        return True
+        pass
 
     # =========================================================================
     # Cleanup
@@ -4280,16 +3424,7 @@ class RLMEnv(vf.StatefulToolEnv):
     @vf.cleanup
     async def cleanup_rlm_state(self, state: State):
         """Cleanup RLM-specific state and prepend sub-LLM trajectory steps."""
-        rollout_id = state.get("rollout_id")
-
-        if rollout_id and rollout_id in self.active_rollouts:
-            del self.active_rollouts[rollout_id]
-        try:
-            await self._executor.cleanup(state)
-        finally:
-            if not self.active_rollouts:
-                await self._teardown_interception_server()
-                await self._teardown_tunnel()
+        pass
 
     async def render_completion(self, state: State):
         """Render the tracked observable main-model rollout."""
@@ -4314,4 +3449,4 @@ class RLMEnv(vf.StatefulToolEnv):
 
     async def post_rollout(self, state: State):
         """Read final answer from worker if not already set."""
-        await self._ensure_final_answer(state)
+        pass

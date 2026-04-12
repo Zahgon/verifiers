@@ -127,15 +127,7 @@ class MCPToolWrapper:
 
     def to_tool_def(self) -> Tool:
         """Convert the MCP tool metadata directly to vf.Tool."""
-        parameters = cast(
-            dict[str, object],
-            self.tool.inputSchema or {"type": "object", "properties": {}},
-        )
-        return Tool(
-            name=self.__name__,
-            description=self.__doc__ or "",
-            parameters=parameters,
-        )
+        pass
 
 
 class MCPEnv(vf.ToolEnv):
@@ -202,29 +194,10 @@ class MCPEnv(vf.ToolEnv):
         )
 
     def _run_loop(self, loop: asyncio.AbstractEventLoop):
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
+        pass
 
     async def _connect_servers(self):
-        wrapper_tools = []
-
-        for server_config in self.mcp_servers:
-            connection = MCPServerConnection(server_config, self.logger)
-            tools = await connection.connect()
-
-            self.server_connections[server_config.name] = connection
-
-            for tool in tools.values():
-                wrapper = MCPToolWrapper(server_config.name, tool, connection)
-                wrapper_tools.append(wrapper)
-                self.mcp_tools[wrapper.__name__] = wrapper
-                self.logger.info(
-                    f"Registered MCP tool: {wrapper.__name__} from server '{server_config.name}'"
-                )
-
-        self.tools = wrapper_tools
-        self.tool_defs = [tool.to_tool_def() for tool in wrapper_tools]
-        self.tool_map = {tool.__name__: tool for tool in wrapper_tools}
+        pass
 
     async def call_tool(
         self, tool_name: str, tool_args: dict, tool_call_id: str, **kwargs
@@ -268,5 +241,4 @@ class MCPEnv(vf.ToolEnv):
         self.mcp_tools.clear()
 
     def _shutdown_loop(self):
-        self._bg_loop.call_soon_threadsafe(self._bg_loop.stop)
-        self._bg_thread.join(timeout=5)
+        pass

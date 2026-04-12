@@ -52,28 +52,7 @@ from verifiers.utils.client_utils import setup_anthropic_client
 
 def _handle_anthropic_overlong_prompt(func):
     """Decorator to handle overlong prompt errors from the Anthropic API."""
-
-    @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except (AuthenticationError, PermissionDeniedError):
-            raise
-        except BadRequestError as e:
-            error_text = e.message.lower()
-            context_length_phrases = [
-                "prompt is too long",
-                "exceed context limit",
-                "exceeds context limit",
-                "too many total text bytes",
-                "context length",
-                "input is too long",
-            ]
-            if any(phrase in error_text for phrase in context_length_phrases):
-                raise OverlongPromptError from e
-            raise
-
-    return wrapper
+    pass
 
 
 class AnthropicMessagesClient(
@@ -87,7 +66,7 @@ class AnthropicMessagesClient(
     """Wrapper for Messages API via AsyncAnthropic client."""
 
     def setup_client(self, config: ClientConfig) -> AsyncAnthropic:
-        return setup_anthropic_client(config)
+        pass
 
     async def close(self) -> None:
         await self.client.close()

@@ -200,7 +200,7 @@ class BrowserEnv(vf.StatefulToolEnv):
     @vf.cleanup
     async def cleanup_session(self, state: vf.State) -> None:
         """Clean up session after rollout."""
-        await self._mode_impl.cleanup_session(state)
+        pass
 
     @vf.teardown
     async def teardown(self) -> None:

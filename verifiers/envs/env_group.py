@@ -38,7 +38,7 @@ class EnvGroupRubric(vf.Rubric):
 
     def _get_reward_func_names(self) -> list[str]:
         """Return all unique reward function names across all environments."""
-        return self.all_reward_names
+        pass
 
     async def score_rollout(
         self,
@@ -166,12 +166,7 @@ class EnvGroup(vf.Environment):
 
         def make_add_task_fn(task_name: str):
             """Factory function to avoid closure capturing loop variable by reference."""
-
-            def add_task(example):
-                example["task"] = task_name
-                return example
-
-            return add_task
+            pass
 
         for env, name in zip(self.envs, self.env_names):
             add_task = make_add_task_fn(name)
@@ -235,8 +230,7 @@ class EnvGroup(vf.Environment):
             dataset = dataset.remove_columns(["example_id"])
 
         def add_example_id(example, i):
-            example["example_id"] = i
-            return example
+            pass
 
         dataset = dataset.map(add_example_id, with_indices=True, **map_kwargs)
 
@@ -253,20 +247,7 @@ class EnvGroup(vf.Environment):
         """
         Ensure unique example_ids and mapped tasks across concatenated datasets.
         """
-        # ensure unique example_ids across concatenated datasets
-        if "example_id" in dataset.column_names:
-            dataset = dataset.remove_columns(["example_id"])
-
-        def add_example_id(example, i):
-            example["example_id"] = i
-            return example
-
-        dataset = dataset.map(add_example_id, with_indices=True, **map_kwargs)
-        assert "example_id" in dataset.column_names
-        assert "task" in dataset.column_names, (
-            "Task column should be set during concatenation in __init__"
-        )
-        return dataset
+        pass
 
     @final
     async def run_rollout(  # type: ignore[override]
@@ -324,12 +305,8 @@ class EnvGroup(vf.Environment):
 
     def set_max_seq_len(self, max_seq_len: int | None) -> None:
         """Set the max_seq_len value for this environment group and all sub-environments."""
-        self.max_seq_len = max_seq_len
-        for env in self.envs:
-            env.set_max_seq_len(max_seq_len)
+        pass
 
     def set_score_rollouts(self, score_rollouts: bool) -> None:
         """Set the score_rollouts flag for this environment group and all sub-environments."""
-        self.score_rollouts = score_rollouts
-        for env in self.envs:
-            env.set_score_rollouts(score_rollouts)
+        pass

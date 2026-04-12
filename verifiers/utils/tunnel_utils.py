@@ -238,11 +238,7 @@ class TunnelPool:
         Args:
             tunnel_url: The tunnel URL to release.
         """
-        async with self._lock:
-            for tunnel in self._tunnels:
-                if tunnel["url"] == tunnel_url:
-                    tunnel["active_rollouts"] = max(0, tunnel["active_rollouts"] - 1)
-                    break
+        pass
 
     def teardown(self) -> None:
         """

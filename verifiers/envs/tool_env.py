@@ -23,55 +23,18 @@ class ToolMonitorRubric(vf.Rubric):
             self.add_metric(self.get_tool_call_count_func(tool_name))
 
     def add_tool_metric(self, tool: Callable):
-        tool_name = tool.__name__  # type: ignore[union-attr]
-        if tool_name not in self.tool_names:
-            self.tool_names.append(tool_name)
-            self.add_metric(self.get_tool_call_count_func(tool_name))
+        pass
 
     def remove_tool_metric(self, tool: Callable):
-        tool_name = tool.__name__  # type: ignore[union-attr]
-        if tool_name in self.tool_names:
-            self.tool_names.remove(tool_name)
-            metric_name = f"{tool_name}_calls"
-            for i, func in enumerate(self.funcs):
-                if func.__name__ == metric_name:
-                    self.funcs.pop(i)
-                    self.weights.pop(i)
-                    break
+        pass
 
     async def total_tool_calls(self, completion: Messages) -> float:
         """Count the total number of tool calls."""
-        total = 0
-        assert isinstance(completion, list)
-        for msg in completion:
-            if msg.role != "assistant" or not hasattr(msg, "tool_calls"):
-                continue
-            tool_calls = msg.tool_calls
-            if isinstance(tool_calls, list):
-                total += len(tool_calls)
-        return float(total)
+        pass
 
     def get_tool_call_count_func(self, tool_name: str) -> Callable:
         """Create a metric that counts calls to a specific tool."""
-
-        async def tool_call_count_func(completion: Messages) -> int:
-            """Count calls to {tool_name} tool."""
-            count = 0
-            assert isinstance(completion, list)
-            for msg in completion:
-                if not isinstance(msg, AssistantMessage):
-                    continue
-                tool_calls = msg.tool_calls
-                if not isinstance(tool_calls, list):
-                    continue
-                for tool_call in tool_calls:
-                    if isinstance(tool_call, ToolCall) and tool_call.name == tool_name:
-                        count += 1
-
-            return count
-
-        tool_call_count_func.__name__ = f"{tool_name}_calls"
-        return tool_call_count_func
+        pass
 
 
 class ToolEnv(vf.MultiTurnEnv):
@@ -102,32 +65,14 @@ class ToolEnv(vf.MultiTurnEnv):
         return any(isinstance(err, err_type) for err_type in self.stop_errors)
 
     def add_tool(self, tool: Callable):
-        self.tools.append(tool)
-        if self.tool_defs is None:
-            self.tool_defs = []
-        self.tool_defs.append(convert_func_to_tool_def(tool))
-        self.tool_map[getattr(tool, "__name__", tool.__class__.__name__)] = tool
-        self.tool_monitor_rubric.add_tool_metric(tool)
+        pass
 
     def remove_tool(self, tool: Callable):
-        self.tools.remove(tool)
-        if self.tool_defs is None:
-            self.tool_defs = []
-        self.tool_defs.remove(convert_func_to_tool_def(tool))
-        tool_name = getattr(tool, "__name__", tool.__class__.__name__)
-        self.tool_map.pop(tool_name)
-        self.tool_monitor_rubric.remove_tool_metric(tool)
+        pass
 
     @vf.stop
     async def no_tools_called(self, state: vf.State) -> bool:
-        if len(state["trajectory"]) == 0:
-            return False
-        last_message = state["trajectory"][-1]["completion"][-1]
-        is_assistant_message = last_message.role == "assistant"
-        no_tool_calls = (
-            not hasattr(last_message, "tool_calls") or not last_message.tool_calls
-        )
-        return is_assistant_message and no_tool_calls
+        pass
 
     async def call_tool(
         self, tool_name: str, tool_args: dict, tool_call_id: str, **kwargs

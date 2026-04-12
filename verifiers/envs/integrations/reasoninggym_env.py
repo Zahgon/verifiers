@@ -41,10 +41,7 @@ class ReasoningGymEnv(vf.SingleTurnEnv):
             completion: vf.Messages, answer: str, **kwargs
         ) -> float:
             # rg_dataset expects an int index
-            entry = self.rg_dataset[int(answer)]
-            response = str(parser.parse_answer(completion)).strip()
-            reward = self.rg_dataset.score_answer(answer=response, entry=entry)
-            return reward
+            pass
 
         rubric.add_reward_func(check_answer_reward_func)
         rubric.add_reward_func(parser.get_format_reward_func(), weight=0.0)
@@ -62,35 +59,7 @@ class ReasoningGymEnv(vf.SingleTurnEnv):
     def build_rg_dataset(
         self, gym: str | List[str | dict], total_examples: int = 1000, seed: int = 0
     ) -> ProceduralDataset:
-        if isinstance(gym, str):
-            return rg.create_dataset(gym, size=total_examples, seed=seed)
-        dataset_specs = []
-        for dataset_config in gym:
-            if isinstance(dataset_config, str):
-                dataset_specs.append(
-                    DatasetSpec(name=dataset_config, weight=1.0, config={})
-                )
-            elif isinstance(dataset_config, dict):
-                dataset_specs.append(DatasetSpec(**dataset_config))
-            else:
-                raise ValueError(f"Invalid dataset config: {dataset_config}")
-        return rg.create_dataset(
-            "composite", datasets=dataset_specs, size=total_examples, seed=seed
-        )
+        pass
 
     def rg_to_hf(self, rg_dataset: ProceduralDataset) -> Tuple[Dataset, Dataset]:
-        train_dataset_rows = []
-        eval_dataset_rows = []
-        for i, x in enumerate(rg_dataset):
-            row = {
-                "question": x["question"],
-                "answer": str(i),  # in verifiers, an answer must be a string
-                "task": x["metadata"]["source_dataset"],
-            }
-            if i < self.num_train_examples:
-                train_dataset_rows.append(row)
-            else:
-                eval_dataset_rows.append(row)
-        dataset = Dataset.from_list(train_dataset_rows)
-        eval_dataset = Dataset.from_list(eval_dataset_rows)
-        return dataset, eval_dataset
+        pass

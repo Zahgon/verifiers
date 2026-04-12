@@ -64,10 +64,7 @@ class EnvEvalState:
 
     @property
     def elapsed_time(self) -> float:
-        if self.start_time is None:
-            return 0.0
-        end = self.end_time or time.time()
-        return end - self.start_time
+        pass
 
 
 def _make_histogram(values: list[float], bins: int = 10, height: int = 8) -> Text:
@@ -144,11 +141,11 @@ class EvalDisplayState:
 
     @property
     def elapsed_time(self) -> float:
-        return time.time() - self.start_time
+        pass
 
     @property
     def all_completed(self) -> bool:
-        return all(env.status in ("completed", "failed") for env in self.envs.values())
+        pass
 
 
 class EvalDisplay(BaseDisplay):
@@ -193,22 +190,7 @@ class EvalDisplay(BaseDisplay):
             self._env_log_titles[idx] = Text("logs", style="dim")
 
     def _on_key(self, key: str) -> None:
-        if not self.configs:
-            return
-        if key == "right":
-            self._selected_env_idx = (self._selected_env_idx + 1) % len(self.configs)
-            self._log_scroll_offset = 0  # reset scroll on env switch
-            self.refresh()
-        elif key == "left":
-            self._selected_env_idx = (self._selected_env_idx - 1) % len(self.configs)
-            self._log_scroll_offset = 0  # reset scroll on env switch
-            self.refresh()
-        elif key == "up":
-            self._log_scroll_offset += 3
-            self.refresh()
-        elif key == "down":
-            self._log_scroll_offset = max(0, self._log_scroll_offset - 3)
-            self.refresh()
+        pass
 
     @staticmethod
     def _display_max_concurrent(config: EvalConfig, total_rollouts: int) -> int:
@@ -310,23 +292,7 @@ class EvalDisplay(BaseDisplay):
 
     async def _tail_log_files(self) -> None:
         """Background task to tail per-env log files and push lines to per-env buffers."""
-        while True:
-            await asyncio.sleep(0.2)
-            for env_idx, log_files in list(self._env_log_files.items()):
-                for path in list(log_files.keys()):
-                    if not path.exists():
-                        continue
-                    try:
-                        pos = log_files[path]
-                        with open(path, "r", encoding="utf-8", errors="replace") as f:
-                            f.seek(pos)
-                            for line in f:
-                                line = line.rstrip("\n")
-                                if line:
-                                    self._env_logs[env_idx].append(line)
-                            log_files[path] = f.tell()
-                    except Exception:
-                        pass
+        pass
 
     def _get_error_rate_color(self, error_rate: float) -> str:
         """Get color for error rate: red if > 10%, otherwise default."""

@@ -66,20 +66,15 @@ class Task:
 
     @property
     def sandbox_spec(self) -> SandboxSpec | None:
-        if isinstance(self._taskset, SandboxTaskSet):
-            return self._taskset.get_sandbox_spec(self.info)
-        return None
+        pass
 
     @property
     def image(self) -> str | None:
-        spec = self.sandbox_spec
-        return spec.image if spec else None
+        pass
 
     @property
     def workdir(self) -> str:
-        if isinstance(self._taskset, SandboxTaskSet):
-            return self._taskset.get_workdir(self.info)
-        return "/app"
+        pass
 
     def __repr__(self) -> str:
         spec = self.sandbox_spec
@@ -138,7 +133,7 @@ class TaskSet:
         pass
 
     async def validate_instance(self, state: State) -> bool:
-        return True
+        pass
 
     # -- Public API ----------------------------------------------------------
 
@@ -152,9 +147,7 @@ class TaskSet:
         if "prompt" not in ds.column_names:
 
             def add_prompt(row: dict) -> dict:
-                info = row.get("info") or {}
-                instruction = self.get_instruction(info)
-                return {"prompt": [{"role": "user", "content": instruction}]}
+                pass
 
             ds = ds.map(add_prompt)
         return ds
@@ -182,16 +175,10 @@ class TaskSet:
     # -- Combinators ---------------------------------------------------------
 
     def filter(self, predicate: Callable[[dict], bool]) -> TaskSet:
-        clone = object.__new__(type(self))
-        clone.__dict__.update(self.__dict__)
-        clone._dataset = self._dataset.filter(predicate)
-        return clone
+        pass
 
     def take(self, n: int) -> TaskSet:
-        clone = object.__new__(type(self))
-        clone.__dict__.update(self.__dict__)
-        clone._dataset = self._dataset.select(range(min(n, len(self._dataset))))
-        return clone
+        pass
 
     # -- Validation ----------------------------------------------------------
 
@@ -201,121 +188,7 @@ class TaskSet:
         concurrency: int = 10,
     ) -> list[dict]:
         """Validate instances. For sandbox tasks, creates sandboxes and runs validate_instance."""
-        import asyncio
-        import logging
-        import time
-
-        logger = logging.getLogger(__name__)
-        ds = self.get_dataset()
-        total = min(n, len(ds)) if n is not None else len(ds)
-        is_sandbox = isinstance(self, SandboxTaskSet)
-
-        if not is_sandbox:
-            # No sandbox needed — run validate_instance concurrently
-            sem = asyncio.Semaphore(concurrency)
-
-            async def _validate_simple(i: int) -> dict:
-                row = ds[i]
-                state: State = {  # type: ignore[assignment]
-                    "info": row.get("info") or {},
-                    "answer": row.get("answer", ""),
-                }
-                async with sem:
-                    t0 = time.time()
-                    try:
-                        valid = await self.validate_instance(state)
-                        return {
-                            "index": i,
-                            "valid": valid,
-                            "elapsed": time.time() - t0,
-                            "error": None,
-                        }
-                    except Exception as e:
-                        return {
-                            "index": i,
-                            "valid": False,
-                            "elapsed": time.time() - t0,
-                            "error": str(e),
-                        }
-
-            return await asyncio.gather(*[_validate_simple(i) for i in range(total)])
-
-        # Sandbox path — lazy imports only needed here
-        from prime_sandboxes import CreateSandboxRequest
-        from verifiers.utils.threaded_sandbox_client import ThreadedAsyncSandboxClient
-
-        client = ThreadedAsyncSandboxClient(
-            max_workers=min(max(1, concurrency // 8), 50)
-        )
-        sem = asyncio.Semaphore(concurrency)
-        assert isinstance(self, SandboxTaskSet)
-
-        async def validate_one(i: int) -> dict:
-            row = ds[i]
-            info = row.get("info") or {}
-            state: State = {  # type: ignore[assignment]
-                "info": info,
-                "answer": row.get("answer", ""),
-            }
-
-            async with sem:
-                spec = self.get_sandbox_spec(info)
-                sb = None
-                t0 = time.time()
-                try:
-                    sb = await client.create(
-                        CreateSandboxRequest(
-                            name=f"validate-{i}",
-                            docker_image=spec.image,
-                            cpu_cores=spec.cpu_cores,
-                            memory_gb=spec.memory_gb,
-                            disk_size_gb=spec.disk_size_gb,
-                            gpu_count=spec.gpu_count,
-                            gpu_type=spec.gpu_type,
-                            vm=spec.gpu_count > 0,
-                            timeout_minutes=spec.timeout_minutes,
-                        )
-                    )
-                    state["sandbox_id"] = sb.id
-                    state["sandbox_client"] = client
-                    state["test_timeout"] = spec.timeout_minutes * 60
-                    await client.wait_for_creation(sb.id, max_attempts=120)
-                    await self.setup(state)
-                    valid = await self.validate_instance(state)
-                    elapsed = time.time() - t0
-                    logger.info(f"[{i}] valid={valid} ({elapsed:.0f}s)")
-                    return {
-                        "index": i,
-                        "valid": valid,
-                        "elapsed": elapsed,
-                        "error": None,
-                    }
-                except Exception as e:
-                    elapsed = time.time() - t0
-                    logger.warning(f"[{i}] ERROR: {e} ({elapsed:.0f}s)")
-                    return {
-                        "index": i,
-                        "valid": False,
-                        "elapsed": elapsed,
-                        "error": str(e),
-                    }
-                finally:
-                    if sb is not None:
-                        await client.delete(sb.id)
-
-        logger.info(
-            f"Validating {total} instances from {self.name} (concurrency={concurrency})"
-        )
-        t0 = time.time()
-        try:
-            results = await asyncio.gather(*[validate_one(i) for i in range(total)])
-        finally:
-            client.teardown()
-        elapsed = time.time() - t0
-        passed = sum(1 for r in results if r["valid"])
-        rate = passed / total if total else 0
-        logger.info(f"Validation: {passed}/{total} valid ({rate:.1%}, {elapsed:.0f}s)")
-        return results
+        pass
 
     def __repr__(self) -> str:
         return f"TaskSet(name={self.name!r}, len={len(self)})"
@@ -359,4 +232,4 @@ class SandboxTaskSet(TaskSet):
         pass
 
     async def validate_instance(self, state: State) -> bool:
-        return True
+        pass

@@ -74,11 +74,7 @@ class ZMQEnvClient(EnvClient):
         thread with its own ZMQ context, immune to event loop lag.
         This method simply reports the latest known state.
         """
-        if self.server_state == ServerState.HEALTHY:
-            return HealthResponse(success=True)
-        return HealthResponse(
-            success=False, error=f"Server state: {self.server_state.value}"
-        )
+        pass
 
     async def handle_run_rollout_request(
         self, request: RunRolloutRequest, timeout: float | None
@@ -361,63 +357,10 @@ class ZMQEnvClient(EnvClient):
         Uses a DEALER socket on the main address (same port as requests).
         Sends ``b"ping"`` as the payload; the server responds inline.
         """
-        ctx = zmq.Context()
-        sock = ctx.socket(zmq.DEALER)
-        sock.setsockopt(zmq.LINGER, 0)
-        sock.connect(self.address)
-
-        # Generous probe timeout — no cost since this is a dedicated thread.
-        probe_timeout_ms = max(int(self.health_check_interval * 1000), 2000)
-        sock.setsockopt(zmq.SNDTIMEO, probe_timeout_ms)
-        sock.setsockopt(zmq.RCVTIMEO, probe_timeout_ms)
-
-        failed = 0
-        state = ServerState.STARTUP
-
-        assert self.loop is not None
-
-        while not self.stop_health_thread.is_set():
-            is_healthy = False
-            try:
-                sock.send_multipart([b"health", b"ping"])
-                frames = sock.recv_multipart()
-                if len(frames) == 2:
-                    resp = msgpack.unpackb(frames[1], raw=False)
-                    is_healthy = resp.get("success", False)
-            except zmq.Again:
-                pass
-            except Exception:
-                pass
-
-            if is_healthy:
-                if state != ServerState.HEALTHY:
-                    old_state = state
-                    state = ServerState.HEALTHY
-                    failed = 0
-                    self.loop.call_soon_threadsafe(self.on_became_healthy, old_state)
-                else:
-                    failed = 0
-            else:
-                failed += 1
-                if state == ServerState.HEALTHY and failed >= 5:
-                    state = ServerState.UNHEALTHY
-                    self.loop.call_soon_threadsafe(self.on_became_unhealthy, failed)
-
-            self.stop_health_thread.wait(self.health_check_interval)
-
-        sock.close()
-        ctx.term()
+        pass
 
     def on_became_healthy(self, old_state: ServerState):
-        self.server_state = ServerState.HEALTHY
-        self.healthy_event.set()
-        self.logger.info(
-            f"Env server {self.name} became healthy (was {old_state.value})"
-        )
+        pass
 
     def on_became_unhealthy(self, failed_checks: int):
-        self.server_state = ServerState.UNHEALTHY
-        self.healthy_event.clear()
-        msg = f"Env server {self.name} became unhealthy ({failed_checks} consecutive health check failures)"
-        asyncio.ensure_future(self.cancel_all_pending(msg))
-        self.logger.warning(msg)
+        pass

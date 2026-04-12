@@ -53,14 +53,11 @@ class CliAgentMonitorRubric(vf.Rubric):
 
     async def agent_timeout(self, state: vf.State) -> float:
         """Whether the agent timed out."""
-        return float(bool(state.get("agent_timed_out")))
+        pass
 
     async def agent_error(self, state: vf.State) -> float:
         """Whether the agent errored (non-zero exit_code)."""
-        agent_exit_code = state.get("agent_exit_code")
-        if agent_exit_code is None:
-            return 0.0
-        return float(agent_exit_code != 0)
+        pass
 
 
 class CliAgentEnv(SandboxMixin, vf.MultiTurnEnv):
@@ -143,11 +140,7 @@ class CliAgentEnv(SandboxMixin, vf.MultiTurnEnv):
         interception_url: str | None = None,
     ):
         """Initialize interception server and tunnel resources. Call from __init__."""
-        self.interception_port = interception_port
-        self.interception_url = interception_url
-        self._tunnel: Tunnel | None = None
-        self._tunnel_lock = asyncio.Lock()
-        self._interception_server = InterceptionServer(port=interception_port)
+        pass
 
     def _require_interception_server(self) -> InterceptionServer:
         if self._interception_server is None:
@@ -568,87 +561,29 @@ class CliAgentEnv(SandboxMixin, vf.MultiTurnEnv):
     @vf.teardown
     async def teardown_resources(self):
         """Stop Prime Tunnel and HTTP interception server."""
-        async with self._tunnel_lock:
-            if self._tunnel is not None:
-                try:
-                    self._tunnel.sync_stop()
-                    self.logger.debug("Prime Tunnel stopped")
-                except Exception as e:
-                    self.logger.warning(f"Error stopping Prime Tunnel: {e}")
-                finally:
-                    self._tunnel = None
-        if self._interception_server is not None:
-            await self._interception_server.stop()
+        pass
 
     @vf.cleanup
     async def cleanup_interception_context(self, state: State):
         """Cleanup interception context for rollout"""
-        # Cancel completion wait task if still running
-        task = state.get("completion_wait_task")
-        if task and not task.done():
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
-
-        state.pop("background_job", None)
-
-        rollout_id = state.get("rollout_id")
-        if rollout_id and self._interception_server is not None:
-            self._interception_server.unregister_rollout(rollout_id)
+        pass
 
     @vf.stop
     async def agent_completed(self, state: State) -> bool:
         """Check if agent has completed."""
-        return state.get("agent_completed", False)
+        pass
 
     @vf.stop
     async def timeout_reached(self, state: State) -> bool:
         """Check rollout timeout"""
-        elapsed = time.time() - state["timing"]["start_time"]
-        return elapsed > self.timeout_seconds
+        pass
 
     async def post_rollout(self, state: State):
         """
         Override for custom post-rollout logic. For example, if sandbox state is needed for reward functions,
         run computation here and cache the result in state before sandbox is destroyed.
         """
-        tool_counts: Counter[str] = Counter()
-        for step in state.get("trajectory", []):
-            for msg in step.get("completion", []):
-                if isinstance(msg, AssistantMessage) and isinstance(
-                    msg.tool_calls, list
-                ):
-                    for tc in msg.tool_calls:
-                        if isinstance(tc, ToolCall):
-                            tool_counts[tc.name] += 1
-
-        example_id = state.get("example_id")
-        num_turns = len(state.get("trajectory", []))
-        stop_condition = state.get("stop_condition", "unknown")
-        error = state.get("error")
-        error_info = (
-            f"{type(error).__name__}: {truncate(str(error), 80)}" if error else None
-        )
-        exit_code = state.get("agent_exit_code")
-        timed_out = state.get("agent_timed_out", False)
-        duration_s = state["timing"].get("total_ms", 0) / 1000
-        tools_str = ",".join(f"{k}:{v}" for k, v in tool_counts.most_common())
-        parts = [
-            f"Finished rollout_id={state.get('rollout_id')}",
-            f"example_id={example_id}",
-            f"turns={num_turns}",
-            f"tools=[{tools_str}]",
-            f"stop={stop_condition}",
-            f"exit_code={exit_code}",
-            f"duration={print_time(duration_s)}",
-        ]
-        if timed_out:
-            parts.append("timed_out=True")
-        if error_info:
-            parts.append(f"error={error_info}")
-        self.logger.info(" | ".join(parts))
+        pass
 
     @vf.cleanup
     async def destroy_sandbox(self, state: State):
@@ -662,15 +597,7 @@ class CliAgentEnv(SandboxMixin, vf.MultiTurnEnv):
         If the rollout was not completed (e.g. cancelled during shutdown),
         the sandbox is always deleted since scoring will not happen.
         """
-        completed = state.get("is_completed", False)
-        if completed:
-            await self.post_rollout(state)
-        sandbox_id = state.get("sandbox_id")
-        if sandbox_id:
-            if self.keep_sandbox_for_scoring and completed:
-                self.deregister_sandbox(sandbox_id)
-            else:
-                await self.delete_sandbox(sandbox_id)
+        pass
 
     async def env_response(
         self, messages: Messages, state: State, **kwargs

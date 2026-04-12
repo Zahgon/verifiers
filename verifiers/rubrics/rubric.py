@@ -59,25 +59,23 @@ class Rubric:
 
     # public helpers
     def add_reward_func(self, func: RewardFunc, weight: float = 1.0):
-        self.funcs.append(func)
-        self.weights.append(weight)
+        pass
 
     def add_metric(self, func: RewardFunc, weight: float = 0.0):
-        self.funcs.append(func)
-        self.weights.append(weight)
+        pass
 
     def add_class_object(self, name: str, obj: Any):
-        self.class_objects[name] = obj
+        pass
 
     # private helpers
     def _get_reward_func_names(self) -> list[str]:
-        return [getattr(func, "__name__", repr(func)) for func in self.funcs]
+        pass
 
     def _get_reward_funcs(self) -> list[RewardFunc]:
-        return [func for func in self.funcs]
+        pass
 
     def _get_reward_weights(self) -> list[float]:
-        return self.weights
+        pass
 
     def _is_group_func(self, func: RewardFunc) -> bool:
         """Check if a function is a GroupRewardFunc by inspecting its signature."""
@@ -97,11 +95,7 @@ class Rubric:
 
     # individual-level reward helpers
     def _get_individual_reward_func_names(self) -> list[str]:
-        return [
-            getattr(func, "__name__", repr(func))
-            for func in self.funcs
-            if not self._is_group_func(func)
-        ]
+        pass
 
     def _get_individual_reward_funcs(self) -> list[RewardFunc]:
         return [func for func in self.funcs if not self._is_group_func(func)]
@@ -160,11 +154,7 @@ class Rubric:
 
     # group-level reward helpers
     def _get_group_reward_func_names(self) -> list[str]:
-        return [
-            getattr(func, "__name__", repr(func))
-            for func in self.funcs
-            if self._is_group_func(func)
-        ]
+        pass
 
     def _get_group_reward_funcs(self) -> list[GroupRewardFunc]:
         return cast(
@@ -173,11 +163,7 @@ class Rubric:
         )
 
     def _get_group_reward_weights(self) -> list[float]:
-        return [
-            weight
-            for func, weight in zip(self.funcs, self.weights)
-            if self._is_group_func(func)
-        ]
+        pass
 
     async def _call_group_reward_func(
         self,

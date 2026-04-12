@@ -47,13 +47,7 @@ def make_reflection_lm(
     )
 
     def reflection_lm(prompt: str) -> str:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            **kwargs,
-        )
-        content = response.choices[0].message.content
-        return content or ""
+        pass
 
     return reflection_lm
 
@@ -136,34 +130,7 @@ class VerifiersGEPAAdapter:
         components_to_update: list[str],
     ) -> Mapping[str, Sequence[Mapping[str, Any]]]:
         """Build reflective dataset for GEPA teacher LLM."""
-        outputs = eval_batch.outputs
-        trajectories = eval_batch.trajectories or []
-        scores = eval_batch.scores
-
-        records = []
-        # outputs, trajectories, and scores should be the same length
-        # Note: prompt/completion are already in printable format from state_to_output
-        for output, trajectory, score in zip(outputs, trajectories, scores):
-            record: dict[str, Any] = {
-                "query": _extract_user_query(output["prompt"]),
-                "completion": output["completion"],
-                "expected_answer": output.get("answer", ""),
-                "reward": score,
-            }
-
-            if trajectory.get("error"):
-                record["error"] = trajectory["error"]
-
-            if trajectory.get("stop_condition"):
-                record["stop_condition"] = trajectory["stop_condition"]
-
-            for col in self.state_columns:
-                if col in trajectory:
-                    record[col] = make_serializable(trajectory[col])
-
-            records.append(record)
-
-        return {comp: records for comp in components_to_update}
+        pass
 
 
 def _inject_system_prompt(
@@ -198,12 +165,4 @@ def _inject_system_prompt(
 
 def _extract_user_query(prompt: Messages) -> str:
     """Extract user query from prompt, skipping system message."""
-    if isinstance(prompt, str):
-        return prompt
-    for msg in prompt:
-        if msg.get("role") == "user":
-            content = message_to_printable(msg).get("content", "")
-            if isinstance(content, str):
-                return content
-            return str(content) if content else ""
-    return ""
+    pass

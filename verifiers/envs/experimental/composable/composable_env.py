@@ -189,17 +189,4 @@ class ComposableEnv(CliAgentEnv):
         not here.  Use ``keep_sandbox_for_scoring=True`` so the sandbox
         stays alive for the rubric to run tests / read files.
         """
-        sandbox_id = state.get("sandbox_id")
-        if sandbox_id and self.harness.log_path and "agent_logs" not in state:
-            try:
-                log_path = shlex.quote(self.harness.log_path)
-                result = await self.sandbox_client.execute_command(
-                    sandbox_id,
-                    f"cat {log_path} 2>/dev/null || echo '<no logs>'",
-                    working_dir=None,
-                )
-                state["agent_logs"] = (result.stdout or "").strip()
-            except Exception as e:
-                self.logger.warning(f"Failed to collect agent logs: {e}")
-
-        await super().post_rollout(state)
+        pass

@@ -104,40 +104,23 @@ class OpenCodeMonitorRubric(vf.Rubric):
     @staticmethod
     def _count_tool_calls(completion: Messages) -> Counter:
         """Count tool calls by name across all assistant messages."""
-        counts: Counter = Counter()
-        assert isinstance(completion, list)
-        for msg in completion:
-            if not isinstance(msg, AssistantMessage):
-                continue
-            tool_calls = msg.tool_calls
-            if not isinstance(tool_calls, list):
-                continue
-            for tc in tool_calls:
-                if isinstance(tc, ToolCall):
-                    counts[tc.name] += 1
-        return counts
+        pass
 
     async def total_tool_calls(self, completion: Messages) -> float:
         """Total number of tool calls across all turns."""
-        return float(sum(self._count_tool_calls(completion).values()))
+        pass
 
     async def unique_tools_used(self, completion: Messages) -> float:
         """Number of distinct tools used."""
-        return float(len(self._count_tool_calls(completion)))
+        pass
 
     async def has_tool_calls(self, completion: Messages) -> float:
         """Whether the completion has any tool calls (0 or 1)."""
-        return float(bool(self._count_tool_calls(completion)))
+        pass
 
     def _make_tool_count_metric(self, tool_name: str) -> Callable:
         """Create a metric function that counts calls to a specific tool."""
-
-        async def tool_count(completion: Messages) -> float:
-            counts = self._count_tool_calls(completion)
-            return float(counts.get(tool_name, 0))
-
-        tool_count.__name__ = f"{tool_name}_calls"
-        return tool_count
+        pass
 
 
 class OpenCodeEnv(CliAgentEnv):
@@ -201,15 +184,15 @@ class OpenCodeEnv(CliAgentEnv):
 
     @property
     def remote_system_prompt_path(self) -> str:
-        return f"{self.asset_dir}/system.txt"
+        pass
 
     @property
     def remote_prompt_path(self) -> str:
-        return f"{self.asset_dir}/prompt.txt"
+        pass
 
     @property
     def remote_logs_path(self) -> str:
-        return f"{self.asset_dir}/logs.txt"
+        pass
 
     async def post_sandbox_setup(self, state: vf.State) -> None:
         """Upload prompt and optional system prompt after sandbox creation."""
@@ -273,70 +256,13 @@ class OpenCodeEnv(CliAgentEnv):
         """
 
         def _normalize() -> vf.Response:
-            message = response.message
-            normalized_tool_calls = message.tool_calls or []
-            if message.tool_calls:
-                normalized_tool_calls = []
-                for tc in message.tool_calls:
-                    if not isinstance(tc, ToolCall):
-                        normalized_tool_calls.append(tc)
-                        continue
-                    try:
-                        compact_arguments = json.dumps(
-                            json.loads(tc.arguments),
-                            separators=(",", ":"),
-                            ensure_ascii=False,
-                        )
-                    except (json.JSONDecodeError, TypeError):
-                        compact_arguments = tc.arguments
-                    normalized_tool_calls.append(
-                        tc.model_copy(
-                            update={
-                                "name": tc.name.lower(),
-                                "arguments": compact_arguments,
-                            }
-                        )
-                    )
-            content = message.content
-            if content is None:
-                content = ""
-            reasoning_content = message.reasoning_content or None
-            normalized_message = message.model_copy(
-                update={
-                    "content": content,
-                    "tool_calls": normalized_tool_calls,
-                    "reasoning_content": reasoning_content,
-                }
-            )
-            return response.model_copy(update={"message": normalized_message})
+            pass
 
         return await asyncio.to_thread(_normalize)
 
     async def post_rollout(self, state: vf.State) -> None:
         """Collect agent logs from sandbox before teardown."""
-        sandbox_id = state.get("sandbox_id")
-        if sandbox_id:
-            try:
-                result = await self.sandbox_client.execute_command(
-                    sandbox_id,
-                    f"cat {self.remote_logs_path} 2>/dev/null || echo '<no logs>'",
-                    working_dir=None,
-                )
-                agent_logs = (result.stdout or "").strip()
-                state["agent_logs"] = agent_logs
-
-                # Log agent output on error or empty trajectory for debugging
-                num_turns = len(state.get("trajectory", []))
-                agent_error = state.get("agent_exit_code", 0) != 0
-                if (agent_error or num_turns == 0) and agent_logs:
-                    logger.warning(
-                        f"Agent logs (example_id={state.get('example_id')}, "
-                        f"exit_code={state.get('agent_exit_code')}, turns={num_turns}):\n{agent_logs}"
-                    )
-            except Exception as e:
-                logger.warning(f"Failed to collect agent logs: {e}")
-
-        await super().post_rollout(state)
+        pass
 
     def build_prompt(self, state: vf.State) -> str:
         """Build the prompt to be uploaded to OpenCode."""
@@ -350,46 +276,7 @@ class OpenCodeEnv(CliAgentEnv):
         enable_interleaved: bool = True,
     ) -> str:
         """Build OpenCode config."""
-        config: dict = {
-            "${SCHEMA_DOLLAR}schema": "https://opencode.ai/config.json",
-            "provider": {
-                "${OPENAI_MODEL%%/*}": {
-                    "npm": "@ai-sdk/openai-compatible",
-                    "name": "${OPENAI_MODEL%%/*}",
-                    "options": {
-                        "baseURL": "$OPENAI_BASE_URL",
-                        "apiKey": "intercepted",
-                        "timeout": self.provider_timeout_ms,
-                    },
-                    "models": {
-                        "${OPENAI_MODEL##*/}": {
-                            "name": "${OPENAI_MODEL##*/}",
-                            "modalities": {
-                                "input": ["text", "image"],
-                                "output": ["text"],
-                            },
-                            "interleaved": {"field": "reasoning_content"}
-                            if enable_interleaved
-                            else False,
-                        }
-                    },
-                }
-            },
-            "model": "$OPENAI_MODEL",
-        }
-
-        if disable_compaction:
-            config["compaction"] = {"auto": False, "prune": False}
-
-        if system_prompt_path or disabled_tools:
-            build_config: dict = {}
-            if system_prompt_path:
-                build_config["prompt"] = "{file:" + system_prompt_path + "}"
-            if disabled_tools:
-                build_config["tools"] = {tool: False for tool in disabled_tools}
-            config["agent"] = {"build": build_config}
-
-        return json.dumps(config, indent=2)
+        pass
 
     def build_run_command(
         self,
@@ -402,18 +289,4 @@ class OpenCodeEnv(CliAgentEnv):
         enable_interleaved: bool = True,
     ) -> str:
         """Build bash script to install and run OpenCode."""
-
-        config_json = self.build_opencode_config(
-            disabled_tools,
-            self.remote_system_prompt_path if system_prompt else None,
-            disable_compaction=disable_compaction,
-            enable_interleaved=enable_interleaved,
-        )
-
-        return run_command_template.format(
-            config_json=config_json,
-            agent_workdir=agent_workdir,
-            prompt_path=self.remote_prompt_path,
-            logs_path=self.remote_logs_path,
-            install_command=install_command,
-        )
+        pass

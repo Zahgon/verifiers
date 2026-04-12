@@ -14,13 +14,7 @@ def CUASandboxMode(**kwargs):
     This function exists for backwards compatibility only and will be removed
     in a future version.
     """
-    warnings.warn(
-        "CUASandboxMode is deprecated, use CUAMode(execution_mode='sandbox') instead",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    kwargs.pop("execution_mode", None)
-    return CUAMode(execution_mode="sandbox", **kwargs)
+    pass
 
 
 __all__ = ["BrowserMode", "DOMMode", "CUAMode", "CUASandboxMode", "SANDBOX_AVAILABLE"]

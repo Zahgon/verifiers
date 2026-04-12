@@ -90,14 +90,7 @@ class DisplayLogHandler(logging.Handler):
         self.setFormatter(logging.Formatter("%(name)s: %(message)s"))
 
     def emit(self, record: logging.LogRecord) -> None:
-        try:
-            if record.name.endswith(".stdout") or record.name.endswith(".stderr"):
-                msg = record.getMessage()
-            else:
-                msg = self.format(record)
-            self.logs.append(msg)
-        except Exception:
-            pass
+        pass
 
 
 class _FDToLogger(threading.Thread):
@@ -365,37 +358,7 @@ class BaseDisplay:
 
     def _key_listener_loop(self) -> None:
         """Background thread that polls stdin for keypresses and dispatches to _on_key."""
-        import select as select_module
-
-        fd = sys.stdin.fileno()
-        stop = self._key_listener_stop
-        while stop is not None and not stop.is_set():
-            # Use select with timeout so we can check the stop event
-            if not select_module.select([fd], [], [], 0.05)[0]:
-                continue
-            char = os.read(fd, 1)
-            if not char:  # EOF (e.g. SSH disconnect)
-                break
-            if char == b"\x1b":
-                # Parse escape sequences for arrow keys
-                if select_module.select([fd], [], [], 0.05)[0]:
-                    next_char = os.read(fd, 1)
-                    if (
-                        next_char == b"["
-                        and select_module.select([fd], [], [], 0.05)[0]
-                    ):
-                        direction = os.read(fd, 1)
-                        key_map = {
-                            b"C": "right",
-                            b"D": "left",
-                            b"A": "up",
-                            b"B": "down",
-                        }
-                        if direction in key_map:
-                            self._on_key(key_map[direction])
-                # Drain any remaining escape sequence chars
-                while select_module.select([fd], [], [], 0.01)[0]:
-                    os.read(fd, 1)
+        pass
 
     def _on_key(self, key: str) -> None:
         """Handle a parsed keypress. Override in subclasses."""
@@ -463,13 +426,7 @@ class BaseDisplay:
 
     def _start_key_listener(self) -> None:
         """Start the key listener background thread."""
-        if not HAS_TERMINAL_CONTROL or not sys.stdin.isatty():
-            return
-        self._key_listener_stop = threading.Event()
-        self._key_listener_thread = threading.Thread(
-            target=self._key_listener_loop, daemon=True
-        )
-        self._key_listener_thread.start()
+        pass
 
     def _stop_key_listener(self) -> None:
         """Stop the key listener background thread."""

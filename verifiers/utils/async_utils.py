@@ -173,47 +173,16 @@ def maybe_retry(
 
     def log_retry(retry_state: tc.RetryCallState) -> None:
         """Log a warning with the exception and the number of attempts."""
-        caller = retry_state.fn.__name__ if retry_state.fn else "unknown function"
-        error_chain = (
-            repr(
-                ErrorChain(
-                    retry_state.outcome.exception() or Exception("Unknown exception")
-                )
-            )
-            if retry_state.outcome
-            else None
-        )
-        next_action = retry_state.next_action.sleep if retry_state.next_action else 0
-        logger.warning(
-            f"Caught {error_chain} in {caller}. Retrying in {print_time(next_action)} (retry {retry_state.attempt_number}/{max_retries})"
-        )
+        pass
 
     last_result = None
 
     def return_last_result(retry_state: tc.RetryCallState):
         """Return the last result when retries are exhausted (instead of raising)."""
-        caller = retry_state.fn.__name__ if retry_state.fn else "unknown function"
-        error_chain = (
-            repr(
-                ErrorChain(
-                    retry_state.outcome.exception() or Exception("Unknown exception")
-                )
-            )
-            if retry_state.outcome
-            else None
-        )
-        logger.error(
-            f"Retries exhausted for {caller} after {max_retries} attempts. "
-            f"Last error: {error_chain}. Continuing with error in state."
-        )
-        return last_result
+        pass
 
     async def wrapper(*args, **kwargs):
-        nonlocal last_result
-        result = await func(*args, **kwargs)
-        last_result = result  # store result
-        reraise_error_from_state(result, error_types)
-        return result
+        pass
 
     wrapper.__name__ = getattr(func, "__name__", "unknown")
     wrapper.__qualname__ = getattr(func, "__qualname__", "unknown")

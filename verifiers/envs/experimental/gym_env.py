@@ -40,9 +40,7 @@ StepOut: TypeAlias = (
 
 
 def normalize_reset(out: ResetOut) -> tuple[Any, dict[str, Any]]:
-    if isinstance(out, tuple) and len(out) == 2:
-        return cast(tuple[Any, dict[str, Any]], out)
-    return out, {}
+    pass
 
 
 def normalize_step(out: StepOut) -> tuple[Any, float, bool, bool, dict[str, Any]]:
@@ -56,12 +54,7 @@ def normalize_step(out: StepOut) -> tuple[Any, float, bool, bool, dict[str, Any]
 
 
 def sum_step_rewards(state: State) -> float:
-    return float(
-        sum(
-            float(step.get("reward", 0.0) or 0.0)
-            for step in state.get("trajectory", [])
-        )
-    )
+    pass
 
 
 class EpisodicSumRubric(Rubric):
@@ -113,28 +106,7 @@ class GymEnv(vf.MultiTurnEnv):
         )
 
     def gym_to_hf(self) -> tuple[Dataset, Dataset | None]:
-        train_rows = []
-        eval_rows = []
-        total = self.num_train_episodes + self.num_eval_episodes
-        env = self.env_cls(**self.env_kwargs)
-
-        try:
-            for i in range(total):
-                obs, _ = normalize_reset(env.reset(seed=self.seed + i))
-                question = self.obs_to_text(obs)
-                row = {"question": question, "answer": str(self.seed + i)}
-                if i < self.num_train_episodes:
-                    train_rows.append(row)
-                else:
-                    eval_rows.append(row)
-        finally:
-            close_fn = getattr(env, "close", None)
-            if close_fn is not None:
-                close_fn()
-
-        dataset = Dataset.from_list(train_rows)
-        eval_dataset = Dataset.from_list(eval_rows) if eval_rows else None
-        return dataset, eval_dataset
+        pass
 
     def obs_to_text(self, obs: Any) -> str:
         """Convert observation to text. Override in subclass for custom formatting."""
@@ -187,12 +159,8 @@ class GymEnv(vf.MultiTurnEnv):
 
     @vf.stop
     async def is_done(self, state: State) -> bool:
-        return state.get("gym_done", False)
+        pass
 
     @vf.cleanup
     async def cleanup_env(self, state: State) -> None:
-        env = state.pop("gym_env", None)
-        if env is not None:
-            close_fn = getattr(env, "close", None)
-            if close_fn is not None:
-                close_fn()
+        pass

@@ -40,51 +40,7 @@ class HarborEnv(vf.CliAgentEnv):
 
     def load_harbor_dataset(self) -> Dataset:
         """Load Harbor tasks from dataset directory into a Dataset with prompts."""
-        if not self.dataset_path.exists():
-            raise FileNotFoundError(f"Dataset path not found: {self.dataset_path}")
-
-        tasks = []
-        for task_dir in sorted(self.dataset_path.iterdir()):
-            if not task_dir.is_dir():
-                continue
-
-            if self.task_names and task_dir.name not in self.task_names:
-                continue
-
-            task_toml = task_dir / "task.toml"
-            instruction_md = task_dir / "instruction.md"
-
-            if not task_toml.exists() or not instruction_md.exists():
-                logger.warning(
-                    f"Skipping {task_dir.name}: missing task.toml or instruction.md"
-                )
-                continue
-
-            with open(task_toml, "rb") as f:
-                config = load_toml(f)
-
-            instruction = instruction_md.read_text().strip()
-
-            messages = [{"role": "user", "content": instruction}]
-
-            task_entry = {
-                "example_id": len(tasks),
-                "task": task_dir.name,
-                "prompt": messages,
-                "info": {
-                    "task_dir": str(task_dir),
-                    "docker_image": config.get("environment", {}).get("docker_image"),
-                    "config": config,
-                },
-            }
-
-            tasks.append(task_entry)
-
-        if not tasks:
-            raise ValueError(f"No valid Harbor tasks found in {self.dataset_path}")
-
-        logger.info(f"Loaded {len(tasks)} Harbor tasks from {self.dataset_path}")
-        return Dataset.from_list(tasks)
+        pass
 
     async def get_docker_image(self, state: vf.State) -> str:
         """Get Docker image from task info, falling back to default."""
@@ -147,45 +103,14 @@ class HarborEnv(vf.CliAgentEnv):
 
     async def upload_test_assets(self, sandbox_id: str, task_dir: Path) -> None:
         """Upload oracle/tests after agent completes, right before running tests."""
-        solution_dir = task_dir / "solution"
-        tests_dir = task_dir / "tests"
-
-        with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp_file:
-            tar_path = Path(tmp_file.name)
-
-        try:
-            with tarfile.open(tar_path, "w:gz") as tar:
-                if solution_dir.exists():
-                    for item in solution_dir.iterdir():
-                        tar.add(item, arcname=f"oracle/{item.name}")
-
-                if tests_dir.exists():
-                    for item in tests_dir.iterdir():
-                        tar.add(item, arcname=f"tests/{item.name}")
-
-            remote_tar = "/tmp/harbor_tests.tar.gz"
-            await self.sandbox_client.upload_file(sandbox_id, remote_tar, str(tar_path))
-            await self.sandbox_client.execute_command(
-                sandbox_id,
-                f"mkdir -p /oracle /tests && tar -xzf {remote_tar} -C / && rm {remote_tar}",
-                working_dir=None,
-                timeout=900,
-            )
-            logger.debug(f"Uploaded test assets for {task_dir.name}")
-        finally:
-            tar_path.unlink(missing_ok=True)
+        pass
 
     async def post_rollout(self, state: vf.State):
         """Run Harbor tests to compute reward before sandbox destruction."""
-        await super().post_rollout(state)
-        if isinstance(state.get("error"), vf.InfraError):
-            logger.debug(f"Skipping Harbor tests due to prior error: {state['error']}")
-            state["reward"] = 0.0
-            return
-        state["reward"] = await self.compute_reward(state)
+        pass
 
     async def harbor_reward(self, state: vf.State, **kwargs) -> float:
-        return state.get("reward", 0.0)
+        pass
 
     async def compute_reward(self, state: vf.State) -> float:
         """
@@ -193,71 +118,4 @@ class HarborEnv(vf.CliAgentEnv):
         Uploads oracle/tests first (they don't exist during agent execution).
         Prioritizes /logs/verifier/reward.txt, falling back to reward.json.
         """
-        sandbox_id = state.get("sandbox_id")
-        if not sandbox_id:
-            logger.error("No sandbox_id in state")
-            return 0.0
-
-        task_dir_str = state.get("harbor_task_dir", "")
-        if not task_dir_str:
-            logger.error("harbor_task_dir not set in state")
-            return 0.0
-        task_dir = Path(task_dir_str)
-        if not task_dir.exists():
-            logger.error(f"Task directory not found: {task_dir}")
-            return 0.0
-
-        try:
-            await self.with_retry(self.upload_test_assets)(sandbox_id, task_dir)
-
-            logger.info(f"Running Harbor tests for task {state.get('task')}")
-            results = await self.run_background_job(
-                state,
-                "bash test.sh",
-                timeout=300,
-                working_dir="/tests",
-                poll_interval=5,
-            )
-            if getattr(results, "exit_code", 0) != 0:
-                logger.warning(
-                    f"Harbor tests exit_code={results.exit_code} "
-                    f"stdout_len={len(getattr(results, 'stdout', '') or '')} "
-                    f"stderr_len={len(getattr(results, 'stderr', '') or '')}"
-                )
-
-            reward_result = await self.with_retry(self.sandbox_client.execute_command)(
-                sandbox_id,
-                "if [ -s /logs/verifier/reward.txt ]; then cat /logs/verifier/reward.txt; "
-                "elif [ -s /logs/verifier/reward.json ]; then cat /logs/verifier/reward.json; fi",
-                working_dir=None,
-            )
-        except Exception as e:
-            if state.get("error") is None:
-                state["error"] = vf.SandboxError(str(e))
-            logger.error(f"Error computing Harbor reward: {e}")
-            return 0.0
-
-        stdout_val = getattr(reward_result, "stdout", "")
-        if stdout_val is None:
-            reward_val = ""
-        elif isinstance(stdout_val, str):
-            reward_val = stdout_val.strip()
-        else:
-            reward_val = str(stdout_val).strip()
-        if reward_val:
-            try:
-                value = float(reward_val)
-                logger.info(f"Reward from reward.txt: {value}")
-                return value
-            except ValueError:
-                try:
-                    data = json.loads(reward_val)
-                except json.JSONDecodeError as e:
-                    logger.error(f"Invalid reward.json: {e}")
-                    return 0.0
-                value = float(data.get("reward", 0.0))
-                logger.info(f"Reward from reward.json: {value}")
-                return value
-
-        logger.warning("No reward.txt or reward.json produced by Harbor tests")
-        return 0.0
+        pass

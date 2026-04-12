@@ -216,87 +216,17 @@ class CUAMode:
 
     def register_tools(self, env) -> None:
         """Register CUA mode tools with the environment."""
-        self.logger = env.logger
-
-        # Set up retry now that we have logger
-        self.retrying = tc.AsyncRetrying(
-            stop=tc.stop_after_attempt(self.max_retries),
-            wait=tc.wait_exponential_jitter(
-                initial=self.base_delay,
-                exp_base=self.backoff_factor,
-                max=self.max_backoff_seconds,
-                jitter=self.jitter,
-            ),
-            before_sleep=tc.before_sleep_log(self.logger, logging.ERROR),
-            reraise=True,
-        )
-
-        # Hide internal args from tool schema
-        _skip = ["session_id", "sandbox_id", "tool_call_id"]
-        env.add_tool(self.click, args_to_skip=_skip)
-        env.add_tool(self.double_click, args_to_skip=_skip)
-        env.add_tool(self.type_text, args_to_skip=_skip)
-        env.add_tool(self.keypress, args_to_skip=_skip)
-        env.add_tool(self.scroll, args_to_skip=_skip)
-        env.add_tool(self.goto, args_to_skip=_skip)
-        env.add_tool(self.back, args_to_skip=_skip)
-        env.add_tool(self.forward, args_to_skip=_skip)
-        env.add_tool(self.wait, args_to_skip=_skip)
-        env.add_tool(self.screenshot, args_to_skip=_skip)
-
-        # For local mode, verify server is reachable
-        if self._execution_mode == "local":
-            self.verify_server_connection()
+        pass
 
     # ==================== Server Health Check (Local Mode) ====================
 
     async def _check_server_health(self) -> None:
         """Check if the CUA server is reachable by hitting its health endpoint."""
-        health_url = f"{self.server_url}/health"
-        timeout = aiohttp.ClientTimeout(total=5)
-
-        try:
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(health_url) as resp:
-                    if resp.status != 200:
-                        error_text = await resp.text()
-                        raise RuntimeError(
-                            f"CUA server health check failed with status {resp.status}: {error_text}"
-                        )
-        except aiohttp.ClientConnectorError:
-            raise RuntimeError(
-                f"\nCUA server is not reachable at {self.server_url}\n\n"
-                "To start the CUA server:\n"
-                "  cd assets/templates/browserbase/cua\n"
-                "  npm install && npm run dev\n\n"
-                "The server must be running before using CUA mode environments.\n"
-            )
-        except asyncio.TimeoutError:
-            raise RuntimeError(
-                f"\nCUA server at {self.server_url} did not respond within 5 seconds.\n\n"
-                "Please check if the server is running and responsive:\n"
-                "  cd assets/templates/browserbase/cua\n"
-                "  npm install && npm run dev\n"
-            )
+        pass
 
     def verify_server_connection(self) -> None:
         """Synchronously verify that the CUA server is reachable."""
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop is not None:
-            import concurrent.futures
-
-            def _run_health_check() -> None:
-                asyncio.run(self._check_server_health())
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(_run_health_check)
-                future.result()
-        else:
-            asyncio.run(self._check_server_health())
+        pass
 
     # ==================== HTTP Client Methods (Local Mode) ====================
 
@@ -642,15 +572,7 @@ class CUAMode:
 
     async def _destroy_session_curl(self, session_id: str, sandbox_id: str) -> None:
         """Destroy a browser session via curl inside the sandbox."""
-        try:
-            await self._execute_sandbox_command(
-                sandbox_id,
-                f"curl -s -X DELETE http://localhost:{self.server_port}/sessions/{session_id}",
-                timeout=30,
-            )
-        except Exception as e:
-            if self.logger:
-                self.logger.warning(f"Failed to destroy session {session_id}: {e}")
+        pass
 
     async def _execute_action_curl(
         self,
@@ -903,49 +825,7 @@ class CUAMode:
 
     async def cleanup_session(self, state: vf.State) -> None:
         """Destroy the browser session (and sandbox if in sandbox mode)."""
-        session_id = state.get("session_id")
-
-        if self._execution_mode == "local":
-            # Local mode: destroy session via HTTP
-            if session_id:
-                try:
-                    async for attempt in self.retrying:  # type: ignore[union-attr]
-                        with attempt:
-                            await self._destroy_session_http(session_id)
-                    with self._sessions_lock:
-                        self.active_sessions.discard(session_id)
-                except Exception as e:
-                    if self.logger:
-                        self.logger.warning(
-                            f"Failed to destroy session {session_id}: {e}"
-                        )
-        else:
-            # Sandbox mode: destroy session and sandbox
-            sandbox_id = state.get("cua_sandbox_id")
-
-            if session_id and sandbox_id:
-                try:
-                    async for attempt in self.retrying:  # type: ignore[union-attr]
-                        with attempt:
-                            await self._destroy_session_curl(session_id, sandbox_id)
-                    with self._sessions_lock:
-                        self.active_sessions.discard(session_id)
-                except Exception as e:
-                    if self.logger:
-                        self.logger.warning(
-                            f"Failed to destroy session {session_id}: {e}"
-                        )
-
-            if sandbox_id:
-                try:
-                    async for attempt in self.retrying:  # type: ignore[union-attr]
-                        with attempt:
-                            await self._delete_sandbox(sandbox_id)
-                except Exception as e:
-                    if self.logger:
-                        self.logger.warning(
-                            f"Failed to delete sandbox {sandbox_id}: {e}"
-                        )
+        pass
 
     async def teardown(self, max_concurrent: int = 50) -> None:
         """Clean up all resources on environment teardown."""
@@ -1037,13 +917,7 @@ class CUAMode:
         tool_call_id: str = "",
     ) -> list[dict]:
         """Click at coordinates (x, y) on the page."""
-        response = await self._execute_action(
-            session_id,
-            {"type": "click", "x": x, "y": y, "button": button},
-            tool_call_id,
-            sandbox_id or None,
-        )
-        return self._format_response(response, session_id)
+        pass
 
     async def double_click(
         self,
@@ -1054,13 +928,7 @@ class CUAMode:
         tool_call_id: str = "",
     ) -> list[dict]:
         """Double-click at coordinates (x, y) on the page."""
-        response = await self._execute_action(
-            session_id,
-            {"type": "double_click", "x": x, "y": y},
-            tool_call_id,
-            sandbox_id or None,
-        )
-        return self._format_response(response, session_id)
+        pass
 
     async def type_text(
         self,
@@ -1070,13 +938,7 @@ class CUAMode:
         tool_call_id: str = "",
     ) -> list[dict]:
         """Type text into the currently focused element."""
-        response = await self._execute_action(
-            session_id,
-            {"type": "type", "text": text},
-            tool_call_id,
-            sandbox_id or None,
-        )
-        return self._format_response(response, session_id)
+        pass
 
     async def keypress(
         self,
@@ -1086,13 +948,7 @@ class CUAMode:
         tool_call_id: str = "",
     ) -> list[dict]:
         """Press keyboard key(s)."""
-        response = await self._execute_action(
-            session_id,
-            {"type": "keypress", "keys": keys},
-            tool_call_id,
-            sandbox_id or None,
-        )
-        return self._format_response(response, session_id)
+        pass
 
     async def scroll(
         self,
@@ -1105,19 +961,7 @@ class CUAMode:
         tool_call_id: str = "",
     ) -> list[dict]:
         """Scroll the page at a specific position."""
-        response = await self._execute_action(
-            session_id,
-            {
-                "type": "scroll",
-                "x": x,
-                "y": y,
-                "scroll_x": scroll_x,
-                "scroll_y": scroll_y,
-            },
-            tool_call_id,
-            sandbox_id or None,
-        )
-        return self._format_response(response, session_id)
+        pass
 
     async def goto(
         self,
@@ -1127,20 +971,7 @@ class CUAMode:
         tool_call_id: str = "",
     ) -> list[dict]:
         """Navigate to a URL."""
-        try:
-            response = await self._execute_action(
-                session_id,
-                {"type": "goto", "url": url},
-                tool_call_id,
-                sandbox_id or None,
-            )
-        except (TimeoutError, asyncio.TimeoutError):
-            response = {
-                "success": False,
-                "error": f"Navigation timeout: The page at {url} took too long to load",
-                "state": {"url": url, "viewport": {}},
-            }
-        return self._format_response(response, session_id)
+        pass
 
     async def back(
         self,
@@ -1149,13 +980,7 @@ class CUAMode:
         tool_call_id: str = "",
     ) -> list[dict]:
         """Navigate back in browser history."""
-        response = await self._execute_action(
-            session_id,
-            {"type": "back"},
-            tool_call_id,
-            sandbox_id or None,
-        )
-        return self._format_response(response, session_id)
+        pass
 
     async def forward(
         self,
@@ -1164,13 +989,7 @@ class CUAMode:
         tool_call_id: str = "",
     ) -> list[dict]:
         """Navigate forward in browser history."""
-        response = await self._execute_action(
-            session_id,
-            {"type": "forward"},
-            tool_call_id,
-            sandbox_id or None,
-        )
-        return self._format_response(response, session_id)
+        pass
 
     async def wait(
         self,
@@ -1202,10 +1021,4 @@ class CUAMode:
         tool_call_id: str = "",
     ) -> list[dict]:
         """Capture a screenshot of the current page state."""
-        response = await self._execute_action(
-            session_id,
-            {"type": "screenshot"},
-            tool_call_id,
-            sandbox_id or None,
-        )
-        return self._format_response(response, session_id)
+        pass

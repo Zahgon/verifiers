@@ -34,18 +34,13 @@ def _has_multimodal_content(messages) -> bool:
 
 
 def _get_role(msg) -> str | None:
-    return msg.get("role") if hasattr(msg, "get") else getattr(msg, "role", None)
+    pass
 
 
 def _is_valid_env_tail(messages: list) -> bool:
     """Validate that messages follow env response patterns:
     all tool messages, with optionally a single user message last."""
-    if not messages:
-        return False
-    for msg in messages[:-1]:
-        if _get_role(msg) != "tool":
-            return False
-    return _get_role(messages[-1]) in ("tool", "user")
+    pass
 
 
 # copy from vllm/entrypoints/openai/protocol.py
@@ -62,10 +57,7 @@ class OpenAIChatCompletionsTokenClient(OpenAIChatCompletionsClient):
     @property
     def token_client(self) -> AsyncOpenAI:
         """Strips trailing /v1 from the OpenAI client."""
-        base_url = str(self.client.base_url).rstrip("/")
-        if base_url.endswith("/v1"):
-            base_url = base_url[:-3]
-        return self.client.with_options(base_url=base_url)
+        pass
 
     @handle_openai_overlong_prompt
     async def get_native_response(
@@ -149,60 +141,13 @@ class OpenAIChatCompletionsTokenClient(OpenAIChatCompletionsClient):
         """
 
         def normalize_for_comparison(value: Any) -> Any:
-            if hasattr(value, "model_dump"):
-                return normalize_for_comparison(value.model_dump())
-            if isinstance(value, Mapping):
-                return {
-                    str(key): normalize_for_comparison(val)
-                    for key, val in value.items()
-                }
-            if isinstance(value, list):
-                return [normalize_for_comparison(item) for item in value]
-            return value
+            pass
 
         async def find_largest_prefix_match() -> tuple[list[int], bool, int] | None:
             """Scan trajectory backwards for the step whose messages form the
             longest prefix of prompt_messages. Returns
             (token_ids, is_truncated, prefix_len) or None."""
-            normalized_prompt_messages = normalize_for_comparison(prompt_messages)
-            best_prefix_len = -1
-            best_step = None
-            for step in reversed(state["trajectory"]):
-                step_tokens = step["tokens"]
-                if step_tokens is None:
-                    continue
-                step_messages = cast(Any, [*step["prompt"], *step["completion"]])
-                step_prompt_messages, _ = await self.to_native_prompt(step_messages)
-                normalized_step_messages = normalize_for_comparison(
-                    step_prompt_messages
-                )
-                prefix_len = len(normalized_step_messages)
-                if prefix_len <= 0:
-                    continue
-                if prefix_len <= best_prefix_len:
-                    continue
-                if prefix_len > len(normalized_prompt_messages):
-                    continue
-                if normalized_prompt_messages[:prefix_len] != normalized_step_messages:
-                    continue
-                best_prefix_len = prefix_len
-                best_step = step
-                if best_prefix_len == len(normalized_prompt_messages):
-                    break
-
-            if best_step is None:
-                return None
-            best_step_tokens = best_step["tokens"]
-            prev_turn_ids = (
-                best_step_tokens["prompt_ids"] + best_step_tokens["completion_ids"]
-            )
-            # Check both seq_len overflow (from token parsing) and max_tokens
-            # truncation (from vLLM finish_reason="length").
-            is_truncated = best_step_tokens.get("is_truncated", False) or (
-                best_step.get("response") is not None
-                and getattr(best_step["response"].message, "is_truncated", False)
-            )
-            return prev_turn_ids, is_truncated, best_prefix_len
+            pass
 
         match = await find_largest_prefix_match()
         if match is None:
@@ -291,23 +236,4 @@ class OpenAIChatCompletionsTokenClient(OpenAIChatCompletionsClient):
         **kwargs,
     ) -> list[int]:
         """Tokenize messages using the vLLM /tokenize API."""
-        if isinstance(messages, str):
-            body = dict(
-                model=model,
-                prompt=messages,
-                **extra_kwargs,
-            )
-            tokenize_response = await self.token_client.post(
-                "/tokenize", body=body, cast_to=TokenizeResponse
-            )
-        else:
-            body = dict(
-                model=model,
-                messages=messages,
-                tools=tools,
-                **extra_kwargs,
-            )
-            tokenize_response = await self.token_client.post(
-                "/tokenize", body=body, cast_to=TokenizeResponse
-            )
-        return tokenize_response.tokens
+        pass

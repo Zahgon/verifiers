@@ -248,14 +248,7 @@ class Environment(ABC):
         self._teardown_handlers = discover_decorated(self, "teardown")
 
         def _sync_teardown():
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(self._teardown())
-                else:
-                    loop.run_until_complete(self._teardown())
-            except RuntimeError:
-                asyncio.run(self._teardown())
+            pass
 
         atexit.register(_sync_teardown)
         signal.signal(
@@ -381,9 +374,7 @@ class Environment(ABC):
         """
         Format dataset by creating example_id and prompt columns, and setting task column.
         """
-        dataset = self._ensure_example_id(dataset)
-        dataset = self._ensure_task(dataset, map_kwargs)
-        return dataset
+        pass
 
     def _format_dataset_source(self, dataset: Dataset) -> Dataset:
         """Format a dataset as chat (messages); client maps to its format at request time."""
@@ -463,9 +454,7 @@ class Environment(ABC):
         input_tokens: int | float = 0,
         output_tokens: int | float = 0,
     ) -> None:
-        tracker = self._get_usage_tracker(state, create_if_missing=True)
-        assert tracker is not None
-        tracker.increment(input_tokens, output_tokens)
+        pass
 
     @final
     def increment_state_usage_from_response(
@@ -477,21 +466,7 @@ class Environment(ABC):
 
     @final
     def get_state_usage(self, state: State) -> TokenUsage | None:
-        tracker = self._get_usage_tracker(state, create_if_missing=False)
-        if tracker is not None:
-            return tracker.snapshot()
-        usage = state.get("usage")
-        if isinstance(usage, Mapping):
-            try:
-                input_tokens = float(usage.get("input_tokens", 0.0))
-                output_tokens = float(usage.get("output_tokens", 0.0))
-            except (TypeError, ValueError):
-                return None
-            return {
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-            }
-        return None
+        pass
 
     async def get_model_response(
         self,
@@ -713,21 +688,7 @@ class Environment(ABC):
         resolved_client = resolve_client(client)
 
         async def run_rollout_attempt() -> State:
-            state = await self.rollout(
-                input,
-                resolved_client,
-                model,
-                sampling_args,
-            )
-
-            if self.score_rollouts:
-                await self.rubric.score_rollout(state)
-            else:
-                await self.rubric.dummy_score_rollout(state)
-
-            await self.rubric.cleanup(state)
-
-            return state
+            pass
 
         state = await maybe_retry(run_rollout_attempt, max_retries=max_retries)()
         output = state_to_output(state, state_columns or [])
@@ -769,26 +730,7 @@ class Environment(ABC):
         resolved_client = resolve_client(client)
 
         async def run_group_attempt() -> list[State]:
-            rollout_tasks = [
-                self.rollout(
-                    input,
-                    resolved_client,
-                    model,
-                    sampling_args,
-                )
-                for input in group_inputs
-            ]
-            group_states = await asyncio.gather(*rollout_tasks)
-
-            if self.score_rollouts:
-                await self.rubric.score_group(group_states)
-            else:
-                await self.rubric.dummy_score_group(group_states)
-
-            for state in group_states:
-                await self.rubric.cleanup(state)
-
-            return group_states
+            pass
 
         group_states = await maybe_retry(run_group_attempt, max_retries=max_retries)()
         outputs = [
@@ -833,40 +775,7 @@ class Environment(ABC):
             filtered_inputs: list[RolloutInput] | list[list[RolloutInput]],
         ) -> None:
             """Initializes the progress bar from the raw inputs."""
-            nonlocal pbar
-
-            total_rollouts = len(raw_inputs)
-            total_groups = len(set([i["example_id"] for i in raw_inputs]))
-            rollouts_per_example = (
-                total_rollouts // total_groups if total_groups > 0 else 0
-            )
-
-            if (
-                isinstance(filtered_inputs, list)
-                and filtered_inputs
-                and isinstance(filtered_inputs[0], list)
-            ):
-                remaining_rollouts = sum(len(g) for g in filtered_inputs)
-            else:
-                remaining_rollouts = len(filtered_inputs)
-            saved_rollouts = total_rollouts - remaining_rollouts
-
-            if filtered_inputs:
-                if isinstance(filtered_inputs[0], list):
-                    pbar_total = total_groups
-                    pbar_initial = saved_rollouts // rollouts_per_example
-                    pbar_desc = f"Processing {total_groups} groups ({total_rollouts} total rollouts)"
-                else:
-                    pbar_total = total_rollouts
-                    pbar_initial = saved_rollouts
-                    pbar_desc = f"Processing {total_rollouts} rollouts"
-
-                pbar = tqdm(
-                    total=pbar_total,
-                    initial=pbar_initial,
-                    desc=pbar_desc,
-                    postfix=dict(reward="?"),
-                )
+            pass
 
         def default_on_progress(
             all_outputs: list[RolloutOutput],
@@ -881,7 +790,7 @@ class Environment(ABC):
 
         def default_on_log(message: str) -> None:
             """Logs using the environment logger."""
-            self.logger.info(message)
+            pass
 
         on_start = on_start or cast(StartCallback, default_on_start)
         extra_on_progress: list[ProgressCallback] = []
@@ -1098,33 +1007,7 @@ class Environment(ABC):
         client: Client | ClientConfig,
         **kwargs,
     ) -> GenerateOutputs:
-        coro = self.generate(
-            inputs,
-            client=client,
-            **kwargs,
-        )
-        # check if we're in existing event loop (e.g. Jupyter)
-        try:
-            loop = asyncio.get_running_loop()
-            import nest_asyncio
-
-            nest_asyncio.apply()
-            return loop.run_until_complete(coro)
-        except RuntimeError:
-            pass
-
-        # script case: create new loop and executor
-        executor = ThreadPoolExecutor(max_workers=self.max_workers)
-        loop = asyncio.new_event_loop()
-        try:
-            loop.set_default_executor(executor)
-            asyncio.set_event_loop(loop)
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
-            asyncio.set_event_loop(None)
-            # shutdown the executor to prevent thread leaks
-            executor.shutdown(wait=False)
+        pass
 
     # evaluation
     def _get_eval_inputs(
@@ -1204,21 +1087,7 @@ class Environment(ABC):
         """
         Evaluate model on the Environment evaluation dataset synchronously.
         """
-        inputs = self._get_eval_inputs(num_examples, rollouts_per_example)
-        return self.generate_sync(
-            inputs,
-            client=client,
-            model=model,
-            sampling_args=sampling_args,
-            max_concurrent=max_concurrent,
-            results_path=results_path,
-            state_columns=state_columns,
-            save_results=save_results,
-            push_to_hf_hub=push_to_hf_hub,
-            hf_hub_dataset_name=hf_hub_dataset_name,
-            independent_scoring=independent_scoring,
-            max_retries=max_retries,
-        )
+        pass
 
     # setters for use by trainers
     def set_kwargs(self, **kwargs) -> None:
@@ -1238,12 +1107,7 @@ class Environment(ABC):
                 setattr(self, key, value)
 
     def add_rubric(self, rubric: Rubric) -> None:
-        if self.rubric is None:
-            self.rubric = rubric
-        elif isinstance(self.rubric, vf.RubricGroup):
-            self.rubric.rubrics.append(rubric)
-        else:
-            self.rubric = vf.RubricGroup(rubrics=[self.rubric, rubric])
+        pass
 
     def set_concurrency(self, concurrency: int) -> None:
         """Set concurrency and scale all registered thread-pool executors.
@@ -1251,16 +1115,15 @@ class Environment(ABC):
         Each executor applies its own scaling function to map concurrency
         to max_workers (default 1:1).
         """
-        self.concurrency = concurrency
-        scale_executors(concurrency=concurrency)
+        pass
 
     def set_max_seq_len(self, max_seq_len: int | None) -> None:
         """Set the maximum sequence length for this environment."""
-        self.max_seq_len = max_seq_len
+        pass
 
     def set_score_rollouts(self, score_rollouts: bool) -> None:
         """Set the score rollouts flag for this environment."""
-        self.score_rollouts = score_rollouts
+        pass
 
     async def start_server(
         self,

@@ -55,11 +55,11 @@ class SandboxMonitorRubric(vf.Rubric):
 
     async def sandbox_oom(self, state: vf.State) -> float:
         """Whether the sandbox was OOM-killed."""
-        return float(bool(state.get("sandbox_oom")))
+        pass
 
     async def sandbox_timeout(self, state: vf.State) -> float:
         """Whether the sandbox timed out."""
-        return float(bool(state.get("sandbox_timeout")))
+        pass
 
 
 # The SDK handles some transient transport retries internally, but upload/download
@@ -67,30 +67,12 @@ class SandboxMonitorRubric(vf.Rubric):
 # sandbox environments can share one policy for those cases.
 def is_retryable_sandbox_api_error(exception: BaseException) -> bool:
     """Return True for transient sandbox API failures that are safe to retry."""
-    if not isinstance(exception, APIError):
-        return False
-
-    error_str = str(exception)
-    retry_tokens = (
-        "502",
-        "503",
-        "ConnectError",
-        "Temporary failure in name resolution",
-    )
-    return any(token in error_str for token in retry_tokens)
+    pass
 
 
 def is_retryable_sandbox_read_error(exception: BaseException) -> bool:
     """Return True for retryable read/transfer timeouts and transient API errors."""
-    return isinstance(
-        exception,
-        (
-            httpx.ReadTimeout,
-            CommandTimeoutError,
-            UploadTimeoutError,
-            DownloadTimeoutError,
-        ),
-    ) or is_retryable_sandbox_api_error(exception)
+    pass
 
 
 class SandboxMixin:
@@ -124,36 +106,7 @@ class SandboxMixin:
         sandbox_creations_per_minute: float | None = 128,
     ):
         """Initialize sandbox client and retry wrapper. Call from subclass __init__."""
-        if not hasattr(self, "logger"):
-            self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self.active_sandboxes = set()
-        self.sandbox_wait_for_creation_max_attempts = (
-            sandbox_wait_for_creation_max_attempts
-        )
-        self.sandbox_creation_rate_limiter = (
-            AsyncLimiter(max_rate=sandbox_creations_per_minute, time_period=60.0)
-            if sandbox_creations_per_minute is not None
-            else None
-        )
-        self.sandbox_client = ThreadedAsyncSandboxClient(
-            max_workers=sandbox_client_max_workers,
-            max_connections=sandbox_client_max_connections,
-            max_keepalive_connections=sandbox_client_max_keepalive_connections,
-        )
-        self.with_retry = tc.AsyncRetrying(
-            stop=tc.stop_after_attempt(max_retries + 1),
-            wait=tc.wait_exponential_jitter(
-                initial=base_delay,
-                exp_base=backoff_factor,
-                max=max_backoff_seconds,
-                jitter=jitter,
-            ),
-            before_sleep=tc.before_sleep_log(
-                cast(Any, self.logger),
-                logging.WARNING,
-            ),
-            reraise=True,
-        ).wraps
+        pass
 
     async def create_sandbox(self, state, request: CreateSandboxRequest) -> str:
         """Create sandbox with retry, tracking, wait_for_creation, and post-setup hook.
@@ -205,9 +158,7 @@ class SandboxMixin:
         """Delete sandbox with retry and tracking."""
 
         async def _delete(sandbox_id: str):
-            await self.sandbox_client.delete(sandbox_id)
-            self.deregister_sandbox(sandbox_id)
-            self.logger.debug(f"Deleted sandbox {sandbox_id}")
+            pass
 
         try:
             await self.with_retry(_delete)(sandbox_id)
@@ -216,13 +167,7 @@ class SandboxMixin:
 
     async def bulk_delete_sandboxes(self, sandbox_ids: list[str]) -> None:
         """Delete multiple sandboxes by their IDs."""
-        try:
-            await self.with_retry(self.sandbox_client.bulk_delete)(sandbox_ids)
-            self.logger.debug(f"Bulk deleted sandboxes: {sandbox_ids}")
-            for sandbox_id in sandbox_ids:
-                self.deregister_sandbox(sandbox_id)
-        except Exception as e:
-            self.logger.error(f"Failed to bulk delete sandboxes {sandbox_ids}: {e}")
+        pass
 
     async def run_background_job(
         self,
@@ -233,23 +178,7 @@ class SandboxMixin:
         poll_interval: int = 3,
     ):
         """Run a command as a background job and poll until completion or timeout."""
-        sandbox_id = state["sandbox_id"]
-        try:
-            return await self.sandbox_client.run_background_job(
-                sandbox_id=sandbox_id,
-                command=command,
-                timeout=timeout,
-                working_dir=working_dir,
-                poll_interval=poll_interval,
-            )
-        except SandboxOOMError as e:
-            state["sandbox_oom"] = True
-            self.logger.error(f"Sandbox OOM during background job: {repr(e)}")
-            raise vf.SandboxError() from e
-        except SandboxTimeoutError as e:
-            state["sandbox_timeout"] = True
-            self.logger.error(f"Sandbox timeout during background job: {repr(e)}")
-            raise vf.SandboxError() from e
+        pass
 
     async def upload_file(
         self,
@@ -293,18 +222,7 @@ class SandboxMixin:
         timeout: int = 10,
     ) -> str | None:
         """Read a file from the sandbox, returning its contents or None on failure."""
-        try:
-            result = await self.sandbox_client.read_file(
-                sandbox_id, remote_path, timeout=timeout
-            )
-            return result.content
-        except SandboxFileNotFoundError:
-            return None
-        except Exception as e:
-            self.logger.warning(
-                f"Failed to read {remote_path} from {sandbox_id}: {type(e).__name__}: {e}"
-            )
-            return None
+        pass
 
     async def upload_bundle(
         self,
@@ -317,42 +235,7 @@ class SandboxMixin:
         Builds a tar.gz archive from ``file_map`` (relative path → UTF-8
         content), uploads it, and extracts into ``dest_dir``.
         """
-
-        def build_tar() -> str:
-            buf = io.BytesIO()
-            with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-                for rel_path, content in file_map.items():
-                    data = content.encode("utf-8")
-                    info = tarfile.TarInfo(name=rel_path)
-                    info.size = len(data)
-                    tar.addfile(info, io.BytesIO(data))
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".tar.gz") as f:
-                f.write(buf.getvalue())
-                return f.name
-
-        tmp_path = await asyncio.to_thread(build_tar)
-        archive_remote = f"{dest_dir}/_bundle.tar.gz"
-        try:
-            await self.upload_file(sandbox_id, archive_remote, tmp_path)
-        finally:
-            await asyncio.to_thread(Path(tmp_path).unlink, missing_ok=True)
-
-        extract_cmd = (
-            f"mkdir -p {dest_dir} && "
-            f'python3 -c "import tarfile; '
-            f"tarfile.open('{archive_remote}', 'r:gz').extractall('{dest_dir}')\" && "
-            f"rm -f {archive_remote}"
-        )
-        result = await self.sandbox_client.execute_command(
-            sandbox_id,
-            extract_cmd,
-            timeout=60,
-        )
-        if result.exit_code != 0:
-            raise vf.SandboxError(
-                f"Bundle extract failed in {sandbox_id} (exit={result.exit_code}): "
-                f"{(result.stderr or '')[:200]}"
-            )
+        pass
 
     def teardown_sandboxes(self):
         """Delete all active sandboxes using sync client.
@@ -360,21 +243,7 @@ class SandboxMixin:
         Uses the synchronous SandboxClient for teardown to avoid event loop issues
         during signal handling and interpreter shutdown.
         """
-        if not self.active_sandboxes:
-            return
-        self.logger.info(f"Deleting {len(self.active_sandboxes)} remaining sandboxes")
-        sync_client = SandboxClient(APIClient())
-        sandbox_ids = list(self.active_sandboxes)
-        batch_size = 100
-        for i in range(0, len(sandbox_ids), batch_size):
-            batch = sandbox_ids[i : i + batch_size]
-            try:
-                sync_client.bulk_delete(sandbox_ids=batch)
-                for sandbox_id in batch:
-                    self.deregister_sandbox(sandbox_id)
-                self.logger.debug(f"Bulk deleted batch of {len(batch)} sandboxes")
-            except Exception as e:
-                self.logger.warning(f"Bulk delete failed for batch: {e}")
+        pass
 
     def teardown_sandbox_client(self):
         """Teardown the threaded sandbox client."""
@@ -387,7 +256,7 @@ class SandboxMixin:
         Override ``teardown_sandboxes`` in subclasses to customize behavior while
         keeping this auto-registered handler.
         """
-        self.teardown_sandboxes()
+        pass
 
     @vf.teardown(priority=-20)
     async def teardown_mixin_sandbox_client(self) -> None:
@@ -396,4 +265,4 @@ class SandboxMixin:
         Override ``teardown_sandbox_client`` in subclasses to customize behavior
         while keeping this auto-registered handler.
         """
-        self.teardown_sandbox_client()
+        pass

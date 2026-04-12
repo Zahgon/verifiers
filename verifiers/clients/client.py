@@ -48,7 +48,7 @@ class Client(ABC, Generic[ClientT, MessagesT, ResponseT, ToolT]):
 
     @property
     def client(self) -> ClientT:
-        return self._client
+        pass
 
     @abstractmethod
     def setup_client(self, config: ClientConfig) -> ClientT: ...

@@ -178,57 +178,14 @@ def message_to_printable(message: Any) -> Any:
     Removes image_url objects from message content.
     Replaces audio parts with a short placeholder to keep logs readable.
     """
-    if isinstance(message, dict):
-        role = message.get("role")
-        content = message.get("content")
-        reasoning_content = message.get("reasoning_content")
-        tool_calls = message.get("tool_calls")
-        if isinstance(content, list):
-            chunks: list[str] = []
-            for part in content:
-                if not isinstance(part, dict):
-                    continue
-                part_type = part.get("type")
-                if part_type == "text":
-                    text = part.get("text")
-                    if isinstance(text, str):
-                        chunks.append(text)
-                elif part_type in {"input_audio", "audio"}:
-                    chunks.append("[audio]")
-                elif part_type == "image_url":
-                    chunks.append("[image]")
-            printable: dict[str, Any] = {
-                "role": role,
-                "content": " ".join(chunks).strip(),
-            }
-            if isinstance(reasoning_content, str):
-                printable["reasoning_content"] = reasoning_content
-            if tool_calls is not None:
-                printable["tool_calls"] = tool_calls
-            return printable
-        return message
-
-    content = getattr(message, "content", None)
-    if isinstance(content, list):
-        raw = (
-            message.model_dump()
-            if hasattr(message, "model_dump")
-            else {"content": content}
-        )
-        printable = message_to_printable(raw)
-        if hasattr(message, "model_copy"):
-            return message.model_copy(update={"content": printable.get("content", "")})
-        return printable
-    return message
+    pass
 
 
 def messages_to_printable(messages: Any) -> Any:
     """
     Removes image_url objects from messages.
     """
-    if isinstance(messages, str):
-        return messages
-    return [message_to_printable(m) for m in messages or []]
+    pass
 
 
 def _extract_image_part_for_output(part: Mapping[str, Any]) -> dict[str, Any] | None:

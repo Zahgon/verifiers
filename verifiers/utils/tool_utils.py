@@ -24,9 +24,4 @@ def is_valid_tool_content_parts(value: Any) -> bool:
 
 def convert_func_to_tool_def(func: Any) -> Tool:
     """Convert *func* to a provider-agnostic vf.Tool definition."""
-    function_schema_obj = function_schema(func)
-    return Tool(
-        name=func.__name__,
-        description=function_schema_obj.description or "",
-        parameters=function_schema_obj.params_json_schema,
-    )
+    pass

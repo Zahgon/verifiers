@@ -21,8 +21,7 @@ def set_proc_title(name: str) -> None:
         name: A short, descriptive label (e.g. ``EnvServer``, ``EnvWorker0``).
               The process title is set to ``{VERIFIERS_PROC_PREFIX}::{name}``.
     """
-    title = f"{VERIFIERS_PROC_PREFIX}::{name}"
-    setproctitle.setproctitle(title)
+    pass
 
 
 def monitor_death_pipe(death_pipe: Connection) -> None:
@@ -37,12 +36,7 @@ def monitor_death_pipe(death_pipe: Connection) -> None:
     """
 
     def monitor_death_pipe_thread() -> None:
-        try:
-            death_pipe.recv()  # blocks until writer closes
-        except (EOFError, OSError):
-            pass
-        logger.info("Death pipe closed — parent is gone, sending SIGTERM to self")
-        os.kill(os.getpid(), signal.SIGTERM)
+        pass
 
     t = threading.Thread(
         target=monitor_death_pipe_thread, name="death-pipe-monitor", daemon=True

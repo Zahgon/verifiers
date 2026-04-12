@@ -92,7 +92,7 @@ class EnvServer(ABC):
         stop_event = asyncio.Event()
 
         def signal_handler(sig, frame):
-            stop_event.set()
+            pass
 
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
@@ -124,5 +124,4 @@ class EnvServer(ABC):
 
     @classmethod
     def run_server(cls, *args, **kwargs):
-        server = cls(*args, **kwargs)
-        return asyncio.run(server.run())
+        pass

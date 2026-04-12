@@ -26,6 +26,4 @@ def ensure_keys(keys: list[str]) -> None:
     Raises:
         MissingEnvKeyError: If any keys are not set (lists all missing)
     """
-    missing = [k for k in keys if not os.environ.get(k)]
-    if missing:
-        raise MissingKeyError(missing)
+    pass

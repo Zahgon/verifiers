@@ -366,7 +366,7 @@ class EnvWorker:
         stop_event = asyncio.Event()
 
         def signal_handler(sig, _frame):
-            stop_event.set()
+            pass
 
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
@@ -385,5 +385,4 @@ class EnvWorker:
 
     @classmethod
     def run_worker(cls, *args, **kwargs) -> None:
-        worker = cls(*args, **kwargs)
-        asyncio.run(worker.run())
+        pass

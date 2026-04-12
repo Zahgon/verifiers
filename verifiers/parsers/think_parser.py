@@ -29,30 +29,4 @@ class ThinkParser(Parser):
         </think>
         ...
         """
-
-        def follows_format(text: str) -> float:
-            if (
-                text.strip().startswith("<think>")
-                and text.count("<think>") == 1
-                and text.count("</think>") == 1
-                and len(text.split("</think>")[-1]) > 0
-            ):
-                return 1.0
-            return 0.0
-
-        def format_reward_func(completion: Messages, **kwargs) -> float:
-            messages = self.get_assistant_messages(completion)
-            if not messages:
-                return 0.0
-            return sum(
-                follows_format(
-                    self._content_to_text(
-                        m.get("content", "")
-                        if isinstance(m, dict)
-                        else (m.content or "")
-                    )
-                )
-                for m in messages
-            ) / len(messages)
-
-        return format_reward_func
+        pass

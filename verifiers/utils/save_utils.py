@@ -74,18 +74,7 @@ def make_serializable(value: object) -> str | int | float | bool | list | dict |
     Example:
     >>> json.dumps(value, default=make_serializable)
     """
-    if isinstance(value, BaseModel):
-        return value.model_dump(exclude_none=True)
-    elif isinstance(value, (datetime, date)):
-        return value.isoformat()
-    elif isinstance(value, Path):
-        return value.as_posix()
-    elif isinstance(value, (BaseException)):
-        return repr(value)
-    elif isinstance(value, Mapping):
-        return dict(value)
-    else:
-        return str(value)
+    pass
 
 
 def extract_usage_tokens(response: object) -> tuple[int, int]:
@@ -249,7 +238,7 @@ def states_to_outputs(
     states: list[State], state_columns: list[str] | None = None
 ) -> list[RolloutOutput]:
     """Convert a list of States to serializable RolloutOutputs."""
-    return [state_to_output(state, state_columns) for state in states]
+    pass
 
 
 class GenerateOutputsBuilder:
@@ -299,19 +288,10 @@ class GenerateOutputsBuilder:
 
     @staticmethod
     def format_base_url(url: str) -> str:
-        return url
+        pass
 
     def compute_base_url(self, client: AsyncOpenAI | ClientConfig | object) -> str:
-        if isinstance(client, ClientConfig):
-            if client.endpoint_configs:
-                endpoint_urls = [cfg.api_base_url for cfg in client.endpoint_configs]
-                if endpoint_urls:
-                    return ",".join(endpoint_urls)
-            return self.format_base_url(client.api_base_url)
-
-        if hasattr(client, "base_url"):
-            return str(getattr(client, "base_url"))
-        return ""
+        pass
 
     @staticmethod
     def tools_key(tools: list[Tool] | None) -> str:
@@ -491,100 +471,32 @@ def validate_resume_metadata(
 
 def save_outputs(outputs: list[RolloutOutput], results_path: Path, mode: str = "w"):
     """Save outputs to disk."""
-    results_path.mkdir(parents=True, exist_ok=True)
-    outputs_path = results_path / "results.jsonl"
-    with open(outputs_path, mode) as f:
-        for idx, output in enumerate(outputs):
-            example_id = output.get("example_id") or "unknown"
-            try:
-                json.dump(output, f, default=make_serializable)
-                f.write("\n")
-            except Exception as e:
-                logger.error(
-                    f"Failed to save result with index {idx} ({example_id=}): {e}"
-                )
+    pass
 
 
 def _get_last_nonempty_line_bounds(file_obj: Any) -> tuple[int, bytes] | None:
     """Return byte offset + contents for the last non-empty line in a file."""
-    file_obj.seek(0, 2)
-    file_size = file_obj.tell()
-    if file_size == 0:
-        return None
-
-    cursor = file_size
-
-    # Skip trailing whitespace/newlines to locate the real end of the last row.
-    while cursor > 0:
-        cursor -= 1
-        file_obj.seek(cursor)
-        if file_obj.read(1) not in b" \t\r\n":
-            break
-    else:
-        return None
-
-    line_end = cursor + 1
-    line_start = cursor
-    while line_start > 0:
-        file_obj.seek(line_start - 1)
-        if file_obj.read(1) == b"\n":
-            break
-        line_start -= 1
-
-    file_obj.seek(line_start)
-    return line_start, file_obj.read(line_end - line_start)
+    pass
 
 
 def _truncate_malformed_trailing_line(outputs_path: Path) -> None:
     """Drop a malformed trailing JSONL row so future appends stay valid."""
-    if not outputs_path.exists() or not outputs_path.is_file():
-        return
-
-    with open(outputs_path, "rb+") as f:
-        last_line_info = _get_last_nonempty_line_bounds(f)
-        if last_line_info is None:
-            return
-
-        line_start, line_bytes = last_line_info
-        try:
-            json.loads(line_bytes.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            logger.warning(
-                "Removing malformed trailing line in %s at byte offset %s",
-                outputs_path,
-                line_start,
-            )
-            f.truncate(line_start)
+    pass
 
 
 def save_new_outputs(new_outputs: list[RolloutOutput], results_path: Path):
     """Saves new rollout outputs to disk (in append mode)."""
-    outputs_path = results_path / "results.jsonl"
-    _truncate_malformed_trailing_line(outputs_path)
-    save_outputs(new_outputs, results_path, mode="a")
+    pass
 
 
 def sanitize_metadata(metadata: GenerateMetadata) -> dict:
     """Sanitizes metadata before saving to disk."""
-
-    metadata_dict = dict(metadata)
-    metadata_dict.pop("path_to_save")
-    metadata_dict.pop("date")
-
-    return metadata_dict
+    pass
 
 
 def save_metadata(metadata: GenerateMetadata, result_path: Path):
     """Saves metadata to disk."""
-
-    result_path.mkdir(parents=True, exist_ok=True)
-    metadata_path = result_path / "metadata.json"
-    metadata_dict = sanitize_metadata(metadata)
-    with open(metadata_path, "w") as f:
-        try:
-            json.dump(metadata_dict, f, default=make_serializable)
-        except Exception as e:
-            logger.error(f"Failed to save metadata: {e}")
+    pass
 
 
 def make_dataset(results: GenerateOutputs) -> Dataset:

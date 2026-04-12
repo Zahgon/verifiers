@@ -56,7 +56,7 @@ class WorkerHandle:
 
     @property
     def active_count(self) -> int:
-        return len(self.active_requests)
+        pass
 
 
 class EnvRouterStats(BaseModel):
@@ -65,11 +65,11 @@ class EnvRouterStats(BaseModel):
 
     @property
     def num_workers(self) -> int:
-        return len(self.workers)
+        pass
 
     @property
     def active_tasks(self) -> int:
-        return sum(w.active_tasks for w in self.workers.values() if w is not None)
+        pass
 
     def __str__(self) -> str:
         worker_counts = ", ".join(
@@ -152,11 +152,7 @@ class EnvRouter:
     @property
     def active_requests(self) -> dict[bytes, ActiveRequestInfo]:
         """All active requests across all workers."""
-        return {
-            rid: info
-            for handle in self.workers.values()
-            for rid, info in handle.active_requests.items()
-        }
+        pass
 
     def get_worker_name(self, worker_id: int) -> str:
         """Get the name of an env worker."""

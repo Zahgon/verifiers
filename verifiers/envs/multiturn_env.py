@@ -31,7 +31,7 @@ class MultiTurnMonitorRubric(vf.Rubric):
         self.add_metric(self.num_turns)
 
     async def num_turns(self, state: State) -> int:
-        return len(state["trajectory"])
+        pass
 
 
 class MultiTurnEnv(vf.Environment):
@@ -44,7 +44,7 @@ class MultiTurnEnv(vf.Environment):
 
     def set_max_total_completion_tokens(self, max_total_completion_tokens: int) -> None:
         """Set the maximum total completion tokens for this environment."""
-        self.max_total_completion_tokens = max_total_completion_tokens
+        pass
 
     @abstractmethod
     async def env_response(
@@ -57,29 +57,24 @@ class MultiTurnEnv(vf.Environment):
 
     @vf.stop(priority=100)  # always check for errors first
     async def has_error(self, state: State, **kwargs) -> bool:
-        return state.get("error") is not None
+        pass
 
     @vf.stop
     async def prompt_too_long(self, state: State) -> bool:
-        return state.get("prompt_too_long", False)
+        pass
 
     @vf.stop
     async def max_turns_reached(self, state: State) -> bool:
-        return len(state["trajectory"]) >= self.max_turns and self.max_turns > 0
+        pass
 
     @vf.stop
     async def max_total_completion_tokens_reached(self, state: State) -> bool:
-        if self.max_total_completion_tokens <= 0:
-            return False
-        usage = self.get_state_usage(state)
-        if usage is None:
-            return False
-        return usage["output_tokens"] >= self.max_total_completion_tokens
+        pass
 
     @vf.stop
     async def has_final_env_response(self, state: State) -> bool:
         """Check if env_response signaled termination via final_env_response."""
-        return state.get("final_env_response") is not None
+        pass
 
     async def setup_state(self, state: State) -> State:
         """Override to add environment-specific state fields."""

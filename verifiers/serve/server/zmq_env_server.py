@@ -44,10 +44,7 @@ class ZMQEnvServer(EnvServer):
         self, client_id: bytes, request_id: bytes, response_bytes: bytes
     ) -> None:
         """Forward a worker response to the client via the ROUTER socket."""
-        try:
-            await self.frontend.send_multipart([client_id, request_id, response_bytes])
-        except zmq.ZMQError as e:
-            self.logger.warning(f"Failed to forward response: {e}")
+        pass
 
     async def serve(self, stop_event: asyncio.Event | None = None) -> None:
         self.logger.info(f"ZMQEnvServer started on {self.address}")

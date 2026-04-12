@@ -47,49 +47,23 @@ class OpenCodeRLMMonitorRubric(vf.Rubric):
 
     @staticmethod
     def _is_main_step(step: dict) -> bool:
-        return not (step.get("extras") or {}).get("is_sub_llm_call")
+        pass
 
     @staticmethod
     async def main_turns(state: State) -> float:
-        return float(
-            sum(
-                1
-                for s in state.get("trajectory", [])
-                if OpenCodeRLMMonitorRubric._is_main_step(s)
-            )
-        )
+        pass
 
     @staticmethod
     async def main_prompt_tokens(state: State) -> float:
-        total = 0
-        for step in state.get("trajectory", []):
-            if not OpenCodeRLMMonitorRubric._is_main_step(step):
-                continue
-            resp = step.get("response")
-            usage = getattr(resp, "usage", None) if resp else None
-            if usage:
-                total += int(getattr(usage, "prompt_tokens", 0) or 0)
-        return float(total)
+        pass
 
     @staticmethod
     async def main_completion_tokens(state: State) -> float:
-        total = 0
-        for step in state.get("trajectory", []):
-            if not OpenCodeRLMMonitorRubric._is_main_step(step):
-                continue
-            resp = step.get("response")
-            usage = getattr(resp, "usage", None) if resp else None
-            if usage:
-                total += int(getattr(usage, "completion_tokens", 0) or 0)
-        return float(total)
+        pass
 
     @staticmethod
     def _make_state_metric(key: str):
-        async def metric(state: State) -> float:
-            return float(state.get(key, 0))
-
-        metric.__name__ = key
-        return metric
+        pass
 
 
 # Extends the default OpenCodeEnv template with bun + plugin installation.
@@ -198,15 +172,7 @@ class OpenCodeRLMEnv(OpenCodeEnv):
         enable_interleaved: bool = True,
     ) -> str:
         """Extend base config with RLM plugin reference."""
-        config_str = super().build_opencode_config(
-            disabled_tools=disabled_tools,
-            system_prompt_path=system_prompt_path,
-            disable_compaction=disable_compaction,
-            enable_interleaved=enable_interleaved,
-        )
-        config = json.loads(config_str)
-        config["plugin"] = [f"file://{self.plugin_install_path}"]
-        return json.dumps(config, indent=2)
+        pass
 
     def build_run_command(
         self,
@@ -218,23 +184,7 @@ class OpenCodeRLMEnv(OpenCodeEnv):
         disable_compaction: bool = True,
         enable_interleaved: bool = True,
     ) -> str:
-        config_json = self.build_opencode_config(
-            disabled_tools,
-            self.remote_system_prompt_path if system_prompt else None,
-            disable_compaction=disable_compaction,
-            enable_interleaved=enable_interleaved,
-        )
-
-        return run_command_template.format(
-            config_json=config_json,
-            agent_workdir=agent_workdir,
-            prompt_path=self.remote_prompt_path,
-            logs_path=self.remote_logs_path,
-            install_command=install_command,
-            plugin_repo=self.plugin_repo,
-            plugin_branch=self.plugin_branch,
-            plugin_install_path=self.plugin_install_path,
-        )
+        pass
 
     async def build_env_vars(self, state: State) -> dict[str, str]:
         env = await super().build_env_vars(state)
@@ -292,11 +242,7 @@ class OpenCodeRLMEnv(OpenCodeEnv):
     @vf.cleanup(priority=1)
     async def cancel_sub_llm_tasks(self, state: State) -> None:
         """Cancel any in-flight sub-LLM tasks during rollout cleanup."""
-        tasks: set = state.get("_sub_llm_tasks", set())
-        for task in tasks:
-            task.cancel()
-        if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+        pass
 
     async def _handle_sub_llm_request(
         self,

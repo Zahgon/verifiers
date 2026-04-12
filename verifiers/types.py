@@ -443,48 +443,12 @@ class ClientConfig(BaseModel):
     @field_validator("extra_headers", mode="before")
     @classmethod
     def validate_extra_headers(cls, value: object) -> dict[str, str]:
-        return _validate_extra_headers_value(value)
+        pass
 
     @field_validator("endpoint_configs", mode="before")
     @classmethod
     def validate_non_recursive_endpoints(cls, value):
-        if not isinstance(value, list):
-            return value
-
-        normalized_endpoints = []
-        for endpoint in value:
-            if isinstance(endpoint, ClientConfig):
-                if endpoint.endpoint_configs:
-                    raise ValueError(
-                        "ClientConfig.endpoint_configs entries cannot include endpoint_configs"
-                    )
-                normalized_endpoints.append(
-                    endpoint.model_dump(
-                        mode="python",
-                        exclude={"endpoint_configs"},
-                        exclude_unset=True,
-                    )
-                )
-                continue
-
-            if (
-                isinstance(endpoint, dict)
-                and "endpoint_configs" in endpoint
-                and endpoint["endpoint_configs"]
-            ):
-                raise ValueError(
-                    "ClientConfig.endpoint_configs entries cannot include endpoint_configs"
-                )
-
-            nested = getattr(endpoint, "endpoint_configs", None)
-            if nested:
-                raise ValueError(
-                    "ClientConfig.endpoint_configs entries cannot include endpoint_configs"
-                )
-
-            normalized_endpoints.append(endpoint)
-
-        return normalized_endpoints
+        pass
 
 
 class EndpointClientConfig(BaseModel):
@@ -503,7 +467,7 @@ class EndpointClientConfig(BaseModel):
     @field_validator("extra_headers", mode="before")
     @classmethod
     def validate_extra_headers(cls, value: object) -> dict[str, str]:
-        return _validate_extra_headers_value(value)
+        pass
 
 
 ClientConfig.model_rebuild()

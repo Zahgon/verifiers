@@ -21,19 +21,7 @@ def msgpack_encoder(obj):
     Handles: Path, UUID, Enum, datetime, Pydantic models, numpy scalars.
     Does NOT handle: lists, dicts, basic types (msgpack does this natively in C).
     """
-    if isinstance(obj, (Path, UUID)):
-        return str(obj)
-    elif isinstance(obj, Enum):
-        return obj.value
-    elif isinstance(obj, (datetime, date)):
-        return obj.isoformat()
-    elif isinstance(obj, (np.integer, np.floating)):
-        return obj.item()
-    elif hasattr(obj, "model_dump"):
-        return obj.model_dump()
-    else:
-        # raise on unknown types to make issues visible
-        raise TypeError(f"Object of type {type(obj)} is not msgpack serializable")
+    pass
 
 
 def make_ipc_address(session_id: str, name: str) -> str:

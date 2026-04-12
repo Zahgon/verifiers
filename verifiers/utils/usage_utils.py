@@ -68,7 +68,7 @@ class StateUsageTracker:
 
     @property
     def usage(self) -> Mapping[str, float]:
-        return self._usage_view
+        pass
 
     def increment(
         self,

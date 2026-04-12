@@ -26,28 +26,7 @@ def verify_response(
     Top-level function so it can be pickled for ProcessPoolExecutor.
     Times itself internally so event loop lag doesn't affect scoring.
     """
-    start = time.perf_counter()
-    if response == "":
-        elapsed = time.perf_counter() - start
-        return 0.0, elapsed
-
-    if len(response) > max_verify_chars:
-        elapsed = time.perf_counter() - start
-        return 0.0, elapsed
-
-    try:
-        parsed_answer = parse(f"\\boxed{{{answer}}}", parsing_timeout=timeout_seconds)
-        parsed_response = parse(
-            f"\\boxed{{{response}}}", parsing_timeout=timeout_seconds
-        )
-        is_correct = verify(
-            parsed_answer, parsed_response, timeout_seconds=timeout_seconds
-        )
-        elapsed = time.perf_counter() - start
-        return float(is_correct), elapsed
-    except BaseException:
-        elapsed = time.perf_counter() - start
-        return 0.0, elapsed
+    pass
 
 
 class MathRubric(Rubric):
@@ -87,54 +66,7 @@ class MathRubric(Rubric):
         self, parser: Parser, completion: Messages, answer: str, **kwargs
     ) -> float:
         """Reward function that checks if the final answer matches the expected answer."""
-        response = parser.parse_answer(completion) or ""
-
-        if len(response) > self.max_verify_chars:
-            self.logger.warning(
-                f"Skipping math verification: parsed response too long "
-                f"({len(response)} chars > {self.max_verify_chars} limit)"
-            )
-            return 0.0
-
-        self.logger.debug(
-            f"Math verify input: response={response[:200]!r}, answer={answer[:200]!r}"
-        )
-
-        loop = asyncio.get_running_loop()
-
-        try:
-            reward, elapsed = await asyncio.wait_for(
-                loop.run_in_executor(
-                    self.executor,
-                    verify_response,
-                    response,
-                    answer,
-                    self.max_verify_chars,
-                    int(self.timeout_seconds),
-                ),
-                timeout=self.HARD_TIMEOUT_SECONDS,
-            )
-        except asyncio.TimeoutError:
-            self.logger.warning(
-                f"Math verification hit hard timeout after {self.HARD_TIMEOUT_SECONDS:.0f}s. "
-                f"response={response[:200]!r}, answer={answer[:200]!r}"
-            )
-            return 0.0
-        except Exception as e:
-            self.logger.warning(
-                f"Math verification failed: {e}. "
-                f"response={response[:200]!r}, answer={answer[:200]!r}"
-            )
-            return 0.0
-
-        if elapsed > self.timeout_seconds:
-            self.logger.debug(
-                f"Math verification exceeded time limit after {elapsed:.2f}s (>{self.timeout_seconds:.1f}s). "
-                f"response={response[:200]!r}, answer={answer[:200]!r}"
-            )
-            return 0.0
-
-        return reward
+        pass
 
     async def teardown(self):
         """Shut down the PPE cleanly so _python_exit doesn't hang.

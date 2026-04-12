@@ -46,84 +46,39 @@ def resolve_client_configs(config: ClientConfig) -> list[ClientConfig]:
 
 
 def load_prime_config() -> dict:
-    try:
-        config_file = Path.home() / ".prime" / "config.json"
-        if config_file.exists():
-            data = json.loads(config_file.read_text())
-            if isinstance(data, dict):
-                return data
-            logger.warning("Invalid prime config: expected dict")
-    except (RuntimeError, json.JSONDecodeError, OSError) as e:
-        logger.warning(f"Failed to load prime config: {e}")
-    return {}
+    pass
 
 
 def _build_headers_and_api_key(
     config: ClientConfig,
 ) -> tuple[dict[str, str], str | None]:
-    headers = dict(config.extra_headers)
-    api_key = os.getenv(config.api_key_var)
-
-    if config.api_key_var == "PRIME_API_KEY":
-        prime_config = load_prime_config()
-        if not api_key:
-            api_key = prime_config.get("api_key", "")
-        team_id = os.getenv("PRIME_TEAM_ID") or prime_config.get("team_id")
-        if team_id:
-            headers["X-Prime-Team-ID"] = team_id
-
-    return headers, api_key
+    pass
 
 
 def _build_http_client(
     config: ClientConfig, headers: dict[str, str]
 ) -> httpx.AsyncClient:
-    timeout = httpx.Timeout(config.timeout, connect=config.connect_timeout)
-    limits = httpx.Limits(
-        max_connections=config.max_connections,
-        max_keepalive_connections=config.max_keepalive_connections,
-    )
-    return httpx.AsyncClient(
-        limits=limits,
-        timeout=timeout,
-        headers=headers,
-    )
+    pass
 
 
 def setup_http_client(config: ClientConfig) -> httpx.AsyncClient:
     """Setup base HTTP client with timeouts, limits, and PRIME headers."""
-    resolved_config = resolve_client_config(config)
-    headers, _ = _build_headers_and_api_key(resolved_config)
-    return _build_http_client(resolved_config, headers)
+    pass
 
 
 def _setup_openai_client_from_resolved(config: ClientConfig) -> AsyncOpenAI:
-    headers, api_key = _build_headers_and_api_key(config)
-    return AsyncOpenAI(
-        api_key=api_key or "EMPTY",
-        base_url=config.api_base_url,
-        max_retries=config.max_retries,
-        http_client=_build_http_client(config, headers),
-    )
+    pass
 
 
 def setup_openai_client(config: ClientConfig) -> AsyncOpenAI:
     """Setup an AsyncOpenAI client from config."""
-    resolved_config = resolve_client_config(config)
-    return _setup_openai_client_from_resolved(resolved_config)
+    pass
 
 
 def _setup_anthropic_client_from_resolved(config: ClientConfig) -> AsyncAnthropic:
-    headers, api_key = _build_headers_and_api_key(config)
-    return AsyncAnthropic(
-        api_key=api_key or "EMPTY",
-        base_url=config.api_base_url,
-        max_retries=config.max_retries,
-        http_client=_build_http_client(config, headers),
-    )
+    pass
 
 
 def setup_anthropic_client(config: ClientConfig) -> AsyncAnthropic:
     """Setup an AsyncAnthropic client from config."""
-    resolved_config = resolve_client_config(config)
-    return _setup_anthropic_client_from_resolved(resolved_config)
+    pass

@@ -149,13 +149,7 @@ class HybridMathRubric(vf.JudgeRubric):
         self, completion: vf.Messages, answer: str, state: vf.State, **kwargs
     ) -> float:
         """Basic rule-based math verification."""
-        score = await self.math_rubric.correct_answer(
-            parser=self.parser,
-            completion=completion,
-            answer=answer,
-        )
-        state["math_verify_score"] = score
-        return score
+        pass
 
     async def judge_score(
         self,
@@ -166,26 +160,11 @@ class HybridMathRubric(vf.JudgeRubric):
         **kwargs,
     ) -> float:
         """Calls judge if math verification failed and a judge model is set."""
-        if state.get("math_verify_score", 0) == 1 or self.judge_model is None:
-            return state.get("math_verify_score", 0)
-
-        judge_response = await self.judge(prompt, completion, answer, state)
-        judge_result = (
-            extract_boxed_answer(judge_response)
-            if len(judge_response) != 1
-            else judge_response
-        )
-        judge_score = 1.0 if judge_result == "A" else 0.0
-        self.logger.debug(f"{judge_score=} ({judge_result=})")
-        state["judge_result"] = judge_result
-        state["judge_score"] = judge_score
-        return judge_score
+        pass
 
     async def correct_answer(self, state: vf.State, **kwargs) -> float:
         """Whether math verification or judge succeeded."""
-        return float(
-            state.get("math_verify_score", 0.0) or state.get("judge_score", 0.0)
-        )
+        pass
 
 
 MATH_VERIFY_SCORER_SCRIPT_TEMPLATE = """\
@@ -263,41 +242,7 @@ class RemoteHybridMathRubric(SandboxMixin, HybridMathRubric):
         self, completion: vf.Messages, answer: str, state: vf.State, **kwargs
     ) -> float:
         """Run math_verify inside the sandbox."""
-        sandbox_id = state.get("sandbox_id")
-        if not sandbox_id:
-            state["math_verify_score"] = 0.0
-            return 0.0
-        # Track the sandbox so it is torn down on crash
-        self.register_sandbox(sandbox_id)
-        if state.get("error") or state.get("sandbox_error"):
-            state["math_verify_score"] = 0.0
-            return 0.0
-
-        try:
-            await asyncio.gather(
-                self.upload_content(sandbox_id, answer, self.solution_path),
-                self.upload_content(sandbox_id, self.score_script, self.scorer_path),
-            )
-            result = await self.sandbox_client.execute_command(
-                sandbox_id,
-                f"python3 {self.scorer_path}",
-                timeout=self.scorer_timeout,
-            )
-            if result.exit_code == 0 and result.stdout.strip():
-                score = float(result.stdout.strip().splitlines()[-1])
-                self.logger.debug(f"Remote math_verify scored {score=}")
-            else:
-                stderr = (result.stderr or "")[:200]
-                self.logger.warning(
-                    f"Remote math_verify failed (exit={result.exit_code}): {stderr}"
-                )
-                score = 0.0
-        except Exception as e:
-            self.logger.warning(f"Remote math_verify error: {type(e).__name__}: {e}")
-            score = 0.0
-
-        state["math_verify_score"] = score
-        return score
+        pass
 
     async def judge_score(
         self,
@@ -308,32 +253,9 @@ class RemoteHybridMathRubric(SandboxMixin, HybridMathRubric):
         **kwargs,
     ) -> float:
         """Judge with response read from the sandbox file."""
-        if state.get("math_verify_score", 0) == 1 or self.judge_model is None:
-            return state.get("math_verify_score", 0)
-
-        sandbox_id = state.get("sandbox_id")
-        if not sandbox_id:
-            return 0.0
-        response = await self.read_file(sandbox_id, self.answer_path)
-        if not response:
-            return 0.0
-        completion = [vf.AssistantMessage(content=response)]
-
-        judge_response = await self.judge(prompt, completion, answer, state)
-        judge_result = (
-            extract_boxed_answer(judge_response)
-            if len(judge_response) != 1
-            else judge_response
-        )
-        judge_score = 1.0 if judge_result == "A" else 0.0
-        self.logger.debug(f"{judge_score=} ({judge_result=})")
-        state["judge_result"] = judge_result
-        state["judge_score"] = judge_score
-        return judge_score
+        pass
 
     @vf.cleanup
     async def cleanup_sandbox(self, state: vf.State) -> None:
         """Delete the sandbox after scoring is complete."""
-        sandbox_id = state.get("sandbox_id")
-        if sandbox_id:
-            await self.delete_sandbox(sandbox_id)
+        pass

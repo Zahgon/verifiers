@@ -35,7 +35,7 @@ class PythonMonitorRubric(vf.Rubric):
         self.add_metric(self.python_ready_wait_time)
 
     async def python_ready_wait_time(self, state: vf.State) -> float:
-        return state["python_state"]["ready_wait_time"]
+        pass
 
 
 class PythonEnv(SandboxEnv):
@@ -240,14 +240,7 @@ PY
         python_state: PythonWorkerState,
     ) -> str:
         """Execute `code` inside persistent Python REPL."""
-        if not python_state["ready"]:
-            await self._wait_for_worker_ready(sandbox_id, sandbox_state, python_state)
-            python_state["ready"] = True
-        self.logger.debug(f"Executing code\n{code}")
-        sandbox_response = await self._send_worker_request(
-            sandbox_id, sandbox_state, {"code": code}
-        )
-        return self._format_response(python_state, sandbox_response)
+        pass
 
     async def _wait_for_worker_ready(
         self,
@@ -255,29 +248,7 @@ PY
         sandbox_state: SandboxState,
         python_state: PythonWorkerState,
     ) -> None:
-        s = time.time()
-        try:
-            await self._wait_for_sandbox_ready(sandbox_state, sandbox_id)
-            check_worker_ready_script = self._CHECK_WORKER_READY_SCRIPT.format(
-                ready_flag=self._READY_FLAG
-            )
-            self.logger.debug(
-                f"Waiting for Python worker to be ready in sandbox {sandbox_id}"
-            )
-            result = await self.sandbox_client.execute_command(
-                sandbox_id,
-                check_worker_ready_script,
-                timeout=self.max_startup_wait_seconds,
-            )
-            if result.exit_code != 0:
-                raise RuntimeError(result.stderr)
-        except Exception as e:
-            raise PythonWorkerNotReadyError from e
-        ready_wait_time = time.time() - s
-        python_state["ready_wait_time"] = ready_wait_time
-        self.logger.debug(
-            f"Waited {ready_wait_time:.1f}s for Python worker to be ready"
-        )
+        pass
 
     async def _send_worker_request(
         self,
@@ -285,39 +256,7 @@ PY
         sandbox_state,
         payload: dict[str, Any],
     ) -> dict[str, Any]:
-        try:
-            payload_json = json.dumps(payload)
-            payload_b64 = base64.b64encode(payload_json.encode("utf-8")).decode("utf-8")
-            alive_check = f'[ -f "{self._WORKER_PID_FILE}" ] && [ -d "/proc/$(cat {self._WORKER_PID_FILE})" ] || {{ echo "WORKER_DEAD"; exit 0; }}'
-            command = textwrap.dedent(
-                f"""
-                {alive_check}
-                python - <<'PY'
-    import base64
-    import json
-    import sys
-
-    data = base64.b64decode('{payload_b64}').decode('utf-8')
-    with open('{self._COMMAND_FIFO}', 'w', encoding='utf-8') as command_file:
-        command_file.write(data)
-    with open('{self._RESPONSE_FIFO}', 'r', encoding='utf-8') as response_file:
-        sys.stdout.write(response_file.read())
-    PY
-                """
-            )
-            raw_response = await self.bash(command, sandbox_id, sandbox_state)
-            if raw_response and raw_response.strip() == "WORKER_DEAD":
-                raise PythonWorkerDeadError
-            if not raw_response:
-                raise RuntimeError("Python worker returned no output")
-            try:
-                response = json.loads(raw_response)
-            except json.JSONDecodeError:
-                response = {"status": "error", "result": raw_response}
-        except Exception as e:
-            raise PythonWorkerRequestError from e
-
-        return response
+        pass
 
     def _format_response(
         self, python_state: PythonWorkerState, sandbox_response: dict[str, Any]

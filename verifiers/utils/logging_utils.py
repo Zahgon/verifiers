@@ -36,18 +36,7 @@ class JsonFormatter(logging.Formatter):
     """JSON formatter for structured logging."""
 
     def format(self, record: logging.LogRecord) -> str:
-        log_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "level": record.levelname,
-            "name": record.name,
-            "message": record.getMessage(),
-            "module": record.module,
-            "function": record.funcName,
-            "line": record.lineno,
-        }
-        if record.exc_info:
-            log_entry["exception"] = self.formatException(record.exc_info)
-        return json.dumps(log_entry)
+        pass
 
 
 def setup_logging(
@@ -146,7 +135,7 @@ def log_level(level: str | int):
 
 def quiet_verifiers():
     """Context manager to temporarily silence verifiers logging by setting WARNING level."""
-    return log_level("WARNING")
+    pass
 
 
 def print_prompt_completions_sample(

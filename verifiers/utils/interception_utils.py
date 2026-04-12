@@ -108,126 +108,15 @@ class InterceptionServer:
 
     def unregister_rollout(self, rollout_id: str) -> None:
         # Cancel any pending intercepts for this rollout
-        for request_id in list(self.intercepts.keys()):
-            intercept = self.intercepts.get(request_id)
-            if intercept and intercept.get("rollout_id") == rollout_id:
-                # Signal chunk queue to exit for streaming requests
-                chunk_queue = intercept.get("chunk_queue")
-                if chunk_queue is not None:
-                    try:
-                        chunk_queue.put_nowait(None)
-                    except asyncio.QueueFull:
-                        pass
-                # Cancel pending future to unblock HTTP handler
-                future = intercept.get("response_future")
-                if future and not future.done():
-                    future.cancel()
-                del self.intercepts[request_id]
-
-        if rollout_id in self.active_rollouts:
-            del self.active_rollouts[rollout_id]
+        pass
 
     async def _handle_request(self, request: Any) -> Any:
-        rollout_id = request.match_info["rollout_id"]
-        context = self.active_rollouts.get(rollout_id)
-        if not context:
-            return web.json_response({"error": "Rollout not found"}, status=404)
-
-        try:
-            request_body = await request.json()
-        except Exception as e:
-            return web.json_response({"error": f"Invalid JSON: {e}"}, status=400)
-
-        _log_request(rollout_id, request_body)
-
-        is_streaming = request_body.get("stream", False)
-        request_id = f"req_{uuid.uuid4().hex[:8]}"
-
-        chunk_queue: asyncio.Queue[dict | None] | None = (
-            asyncio.Queue() if is_streaming else None
-        )
-
-        intercept = {
-            "request_id": request_id,
-            "rollout_id": rollout_id,
-            "messages": request_body["messages"],
-            "model": request_body.get("model"),
-            "tools": request_body.get("tools"),
-            "stream": is_streaming,
-            "chunk_queue": chunk_queue,
-            "response_future": asyncio.Future(),
-            "headers": {k.lower(): v for k, v in request.headers.items()},
-        }
-
-        self.intercepts[request_id] = intercept
-        await context["request_id_queue"].put(request_id)
-
-        if is_streaming:
-            return await self._handle_streaming_response(request, rollout_id, intercept)
-        else:
-            try:
-                response_future = cast(
-                    asyncio.Future[Any], intercept["response_future"]
-                )
-                response = await response_future
-            except asyncio.CancelledError:
-                return web.json_response({"error": "Rollout cancelled"}, status=499)
-            except Exception as e:
-                logger.debug(
-                    f"[{rollout_id}] Rollout error surfaced in non-streaming request: {type(e).__name__}: {e}"
-                )
-                return web.json_response({"error": str(e)}, status=500)
-
-            response_dict = serialize_intercept_response(response)
-
-            _log_response(rollout_id, response_dict)
-            return web.json_response(response_dict)
+        pass
 
     async def _handle_streaming_response(
         self, http_request: Any, rollout_id: str, intercept: dict
     ) -> Any:
-        chunk_queue = cast(asyncio.Queue[dict | None], intercept["chunk_queue"])
-        response_future = cast(asyncio.Future[Any], intercept["response_future"])
-
-        response = web.StreamResponse(
-            status=200,
-            headers={
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-            },
-        )
-        await response.prepare(http_request)
-
-        try:
-            while True:
-                chunk_dict = await chunk_queue.get()
-
-                if chunk_dict is None:
-                    await response.write(b"data: [DONE]\n\n")
-                    break
-
-                chunk_json = json.dumps(chunk_dict)
-                await response.write(f"data: {chunk_json}\n\n".encode())
-
-        except asyncio.CancelledError:
-            logger.debug(f"[{rollout_id}] Streaming cancelled")
-        except Exception as e:
-            logger.error(f"[{rollout_id}] Streaming error: {e}")
-            return response
-
-        try:
-            await response_future
-        except BaseException as e:
-            logger.debug(
-                f"[{rollout_id}] Rollout error surfaced in stream: {type(e).__name__}: {e}"
-            )
-
-        try:
-            await response.write_eof()
-        except ConnectionResetError:
-            logger.debug(f"[{rollout_id}] Client disconnected before write_eof")
-        return response
+        pass
 
 
 def deliver_response(
@@ -360,120 +249,26 @@ async def synthesize_stream(
 
 
 def create_empty_completion(model: str) -> ChatCompletion:
-    return ChatCompletion(
-        id="agent-completed",
-        choices=[
-            Choice(
-                finish_reason="stop",
-                index=0,
-                message=ChatCompletionMessage(role="assistant", content=""),
-            )
-        ],
-        created=int(time.time()),
-        model=model,
-        object="chat.completion",
-    )
+    pass
 
 
 # Logging helpers
 
 
 def _response_content_to_text(content: Any) -> str:
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        text_parts: list[str] = []
-        for part in content:
-            if isinstance(part, dict):
-                text = part.get("text")
-            else:
-                text = getattr(part, "text", None)
-            if isinstance(text, str):
-                text_parts.append(text)
-        return "".join(text_parts)
-    return ""
+    pass
 
 
 def serialize_intercept_response(response: Any) -> dict[str, Any]:
     """Serialize intercepted responses to OpenAI ChatCompletion JSON shape."""
-    if isinstance(response, Response):
-        message = response.message
-        tool_calls = []
-        for tc in message.tool_calls or []:
-            tool_calls.append(
-                {
-                    "id": tc.id,
-                    "type": "function",
-                    "function": {
-                        "name": tc.name,
-                        "arguments": tc.arguments,
-                    },
-                }
-            )
-
-        message_payload: dict[str, Any] = {
-            "role": "assistant",
-            "content": _response_content_to_text(message.content),
-        }
-        if tool_calls:
-            message_payload["tool_calls"] = tool_calls
-        if message.reasoning_content is not None:
-            message_payload["reasoning_content"] = message.reasoning_content
-
-        choice: dict[str, Any] = {
-            "index": 0,
-            "message": message_payload,
-            "finish_reason": message.finish_reason,
-        }
-
-        output = {
-            "id": response.id,
-            "object": "chat.completion",
-            "created": response.created,
-            "model": response.model,
-            "choices": [choice],
-        }
-
-        if response.usage is not None:
-            output["usage"] = response.usage.model_dump(exclude_none=True)
-
-        return output
-
-    if hasattr(response, "model_dump"):
-        return response.model_dump()
-    return dict(response)
+    pass
 
 
 def _log_request(rollout_id: str, body: dict) -> None:
     """Log an intercepted request."""
-    if not logger.isEnabledFor(logging.DEBUG):
-        return
-    log_msg = f"[{rollout_id}] <- INTERCEPTED REQUEST"
-    tools = body.get("tools", [])
-    log_msg += f" ({len(tools)} tool(s))"
-    if tools:
-        log_msg += f"\n[tools] {', '.join([tool.get('function', {}).get('name', '?') for tool in tools])}"
-    for msg in body.get("messages", []):
-        content = msg.get("content", "")
-        if isinstance(content, str):
-            log_msg += f"\n[{msg.get('role', '?')}] {truncate(content)}"
-        else:
-            log_msg += f"\n[{msg.get('role', '?')}] <complex content>"
-        for tc in msg.get("tool_calls") or []:
-            func = tc.get("function", {})
-            log_msg += f"\n[tool_call]\n{func.get('name')}({truncate(func.get('arguments', ''), 100)})"
-    logger.debug(log_msg)
+    pass
 
 
 def _log_response(rollout_id: str, response: dict) -> None:
     """Log the response from the model."""
-    if not logger.isEnabledFor(logging.DEBUG):
-        return
-    log_msg = f"[{rollout_id}] -> RESPONSE"
-    msg = response.get("choices", [{}])[0].get("message", {})
-    if msg.get("content"):
-        log_msg += f"\n[assistant]\n{truncate(msg['content'])}"
-    for tc in msg.get("tool_calls") or []:
-        func = tc.get("function", {})
-        log_msg += f"\n[tool_call]\n{func.get('name')}({truncate(func.get('arguments', ''), 100)})"
-    logger.debug(log_msg)
+    pass

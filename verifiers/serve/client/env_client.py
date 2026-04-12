@@ -38,9 +38,7 @@ class EnvClient(ABC):
         self.recovery_timeout = recovery_timeout
 
     async def health(self, timeout: float | None = 1) -> bool:
-        request = HealthRequest()
-        response = await self.handle_health_request(request, timeout=timeout)
-        return response.success
+        pass
 
     async def run_rollout(
         self,

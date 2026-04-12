@@ -21,7 +21,7 @@ _original_nltk_download = nltk.download
 
 
 def _quiet_download(*args: Any, **kwargs: Any) -> Any:
-    return _original_nltk_download(*args, **{**kwargs, "quiet": True})
+    pass
 
 
 cast(Any, nltk).download = _quiet_download
@@ -86,19 +86,7 @@ class TextArenaEnv(vf.MultiTurnEnv):
         These are read-only after construction, so sharing them via the memo
         dict avoids copying them on every rollout (~120ms and ~38MB saved each).
         """
-        memo: dict = {}
-        env = ta_env
-        while hasattr(env, "env"):
-            env = env.env
-        # Share the dictionary object (contains uk_words, us_words, nltk_words sets)
-        dictionary = getattr(env, "dictionary", None)
-        if dictionary is not None:
-            memo[id(dictionary)] = dictionary
-        # Share the word list (small but also immutable)
-        word_list = getattr(env, "word_list", None)
-        if word_list is not None:
-            memo[id(word_list)] = word_list
-        return memo
+        pass
 
     async def setup_state(self, state: vf.State, **kwargs) -> vf.State:
         ta_env = await asyncio.to_thread(deepcopy, self.ta_env, self.shared_memo.copy())
@@ -108,7 +96,7 @@ class TextArenaEnv(vf.MultiTurnEnv):
 
     @vf.cleanup
     async def cleanup_ta_env(self, state: vf.State):
-        state.pop("ta_env", None)
+        pass
 
     async def env_response(
         self, messages: vf.Messages, state: vf.State, **kwargs: Any
@@ -132,22 +120,4 @@ class TextArenaEnv(vf.MultiTurnEnv):
             return [response]
 
     def ta_to_hf(self) -> tuple[Dataset, Dataset | None]:
-        dataset_rows = []
-        eval_dataset_rows = []
-        _, user_prompt = self.ta_env.get_observation()
-        words = self.ta_env.word_list
-        # set seed
-        random.seed(self.seed)
-        for i in range(self.num_train_examples + self.num_eval_examples):
-            question = user_prompt
-            answer = random.choice(words)
-            if i < self.num_train_examples:
-                dataset_rows.append({"question": question, "answer": answer})
-            else:
-                eval_dataset_rows.append({"question": question, "answer": answer})
-        dataset = Dataset.from_list(dataset_rows)
-        if self.num_eval_examples > 0:
-            eval_dataset = Dataset.from_list(eval_dataset_rows)
-        else:
-            eval_dataset = None
-        return dataset, eval_dataset
+        pass

@@ -13,30 +13,7 @@ def filter_signature(func, args_to_skip):
 
     Does not mutate the original function.
     """
-    if not args_to_skip:
-        return func
-    sig = inspect.signature(func)
-    filtered_sig = sig.replace(
-        parameters=[
-            p
-            for n, p in sig.parameters.items()
-            if n not in args_to_skip and n != "self"
-        ]
-    )
-    filtered_annotations = {
-        k: v
-        for k, v in getattr(func, "__annotations__", {}).items()
-        if k not in args_to_skip
-    }
-
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
-
-    setattr(wrapper, "__name__", getattr(func, "__name__", "unknown"))
-    setattr(wrapper, "__doc__", getattr(func, "__doc__", None))
-    setattr(wrapper, "__signature__", filtered_sig)
-    setattr(wrapper, "__annotations__", filtered_annotations)
-    return wrapper
+    pass
 
 
 class StatefulToolEnv(vf.ToolEnv):
@@ -75,46 +52,10 @@ class StatefulToolEnv(vf.ToolEnv):
 
         Assumes all non-skipped args use standard JSON types (no remaining $ref/$defs).
         """
-        self.tools.append(tool)
-        tool_def = convert_func_to_tool_def(filter_signature(tool, args_to_skip))
-        params = tool_def.parameters
-        for arg in args_to_skip:
-            if (
-                "properties" in params
-                and isinstance(params["properties"], dict)
-                and arg in params["properties"]
-            ):
-                arg_properties = cast(dict[str, dict], params["properties"]).pop(arg)
-                if "$ref" in arg_properties:
-                    refs = arg_properties["$ref"]
-                    ref_type = refs.split("/")[-1]
-                    if "$defs" in params and ref_type in cast(dict, params["$defs"]):
-                        params["$defs"].pop(ref_type)  # type: ignore
-            if (
-                "required" in params
-                and isinstance(params["required"], list)
-                and arg in params["required"]
-            ):
-                cast(list[str], params["required"]).remove(arg)
-        if "$defs" in params and not params["$defs"]:
-            params.pop("$defs")
-        if self.tool_defs is None:
-            self.tool_defs = []
-        self.tool_defs.append(tool_def)
-        tool_name = getattr(tool, "__name__", tool.__class__.__name__)
-        self.tool_map[tool_name] = tool
-        self.skipped_args[tool_name] = args_to_skip
-        self.tool_monitor_rubric.add_tool_metric(tool)
+        pass
 
     def remove_tool(self, tool: Callable):
-        self.tools.remove(tool)
-        tool_name = getattr(tool, "__name__", tool.__class__.__name__)
-        self.tool_defs = [
-            tool_def for tool_def in self.tool_defs if tool_def.name != tool_name
-        ]
-        self.tool_map.pop(tool_name)
-        self.skipped_args.pop(tool_name)
-        self.tool_monitor_rubric.remove_tool_metric(tool)
+        pass
 
     @abstractmethod
     def update_tool_args(

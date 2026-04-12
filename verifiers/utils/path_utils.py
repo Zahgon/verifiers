@@ -15,9 +15,7 @@ def write_temp_file(content: str, suffix: str = ".txt") -> str:
     Intended to be called via ``await asyncio.to_thread(write_temp_file, ...)``
     so that file I/O does not block the event loop.
     """
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=suffix) as f:
-        f.write(content)
-        return f.name
+    pass
 
 
 def _get_outputs_base_path(

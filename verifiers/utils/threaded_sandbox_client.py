@@ -54,18 +54,7 @@ class ThreadedAsyncSandboxClient:
 
         @functools.wraps(getattr(AsyncSandboxClient, name, lambda: None))
         async def wrapper(*args, **kwargs):
-            def run_in_thread():
-                loop = get_or_create_thread_loop()
-                sandbox_client = get_or_create_thread_attr(
-                    "sandbox_client",
-                    AsyncSandboxClient,
-                    **self.client_kwargs,
-                )
-                method = getattr(sandbox_client, name)
-                return loop.run_until_complete(method(*args, **kwargs))
-
-            loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(self.executor, run_in_thread)
+            pass
 
         return wrapper
 

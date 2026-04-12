@@ -52,17 +52,15 @@ class Parser:
 
     def get_system_messages(self, completion: Messages) -> Messages:
         """Helper function to extract system messages from a completion."""
-        return [
-            msg for msg in completion if self._message_field(msg, "role") == "system"
-        ]
+        pass
 
     def get_user_messages(self, completion: Messages) -> Messages:
         """Helper function to extract user messages from a completion."""
-        return [msg for msg in completion if self._message_field(msg, "role") == "user"]
+        pass
 
     def get_tool_messages(self, completion: Messages) -> Messages:
         """Helper function to extract tool messages from a completion."""
-        return [msg for msg in completion if self._message_field(msg, "role") == "tool"]
+        pass
 
     def parse_answer(self, completion: Messages) -> str | None:
         if isinstance(completion, str):
@@ -78,8 +76,4 @@ class Parser:
         """
         Reward function that checks if the final answer is formatted correctly.
         """
-
-        def format_reward_func(completion: list[dict[str, str]], **kwargs) -> float:
-            return 1.0
-
-        return format_reward_func
+        pass

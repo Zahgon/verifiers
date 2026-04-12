@@ -41,7 +41,7 @@ class OpenAICompletionsClient(
     """Wrapper for Completions API via AsyncOpenAI client."""
 
     def setup_client(self, config: ClientConfig) -> AsyncOpenAI:
-        return setup_openai_client(config)
+        pass
 
     async def close(self) -> None:
         await self.client.close()

@@ -718,14 +718,7 @@ def get_log_level(verbose: bool) -> str:
 
 @contextmanager
 def quiet_datasets():
-    prev_level = ds_logging.get_verbosity()
-    ds_logging.set_verbosity(ds_logging.WARNING)
-    disable_progress_bar()
-    try:
-        yield
-    finally:
-        ds_logging.set_verbosity(prev_level)
-        enable_progress_bar()
+    pass
 
 
 async def run_evaluation(
@@ -935,21 +928,7 @@ async def run_evaluations_tui(
             new_outputs: list[RolloutOutput],
             metadata: GenerateMetadata,
         ) -> None:
-            metrics = dict(metadata.get("avg_metrics") or {})
-            pass_at_k = metadata.get("pass_at_k") or {}
-            for k, v in pass_at_k.items():
-                metrics[f"pass@{k}"] = v
-            pass_all_k = metadata.get("pass_all_k") or {}
-            for k, v in pass_all_k.items():
-                metrics[f"pass^{k}"] = v
-            display.update_env_state(
-                env_idx,
-                progress=len(all_outputs),
-                reward=metadata.get("avg_reward"),
-                metrics=metrics,
-                error_rate=metadata.get("avg_error"),
-                usage=metadata.get("usage"),
-            )
+            pass
 
         on_progress: list[ProgressCallback] = [on_display_progress]
         if heart is not None:
@@ -959,7 +938,7 @@ async def run_evaluations_tui(
             display.update_env_state(env_idx, log_message=message)
 
         def register_log_file(log_file: Path) -> None:
-            display.add_log_file_for_env(env_idx, log_file)
+            pass
 
         display.update_env_state(env_idx, status="running")
         try:
@@ -993,9 +972,7 @@ async def run_evaluations_tui(
     refresh_stop = threading.Event()
 
     def refresh_loop() -> None:
-        while not refresh_stop.is_set() and not display.state.all_completed:
-            display.refresh()
-            refresh_stop.wait(1)
+        pass
 
     try:
         async with display:

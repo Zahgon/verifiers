@@ -64,30 +64,7 @@ from verifiers.utils.client_utils import setup_openai_client
 
 def handle_openai_overlong_prompt(func):
     """Decorator to handle overlong prompt errors from the model API."""
-
-    @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except (AuthenticationError, PermissionDeniedError):
-            raise
-        except BadRequestError as e:
-            error_text = e.response.text.lower()
-            context_length_phrases = [
-                "this model's maximum context length is",
-                "is longer than the model's context length",
-                "exceeds the model's context length",
-                "exceed the configured limit",
-                "exceeds the configured limit",
-                "exceeded model",
-                "prompt_too_long",
-                "context length",
-            ]
-            if any(phrase in error_text for phrase in context_length_phrases):
-                raise OverlongPromptError from e
-            raise
-
-    return wrapper
+    pass
 
 
 def get_usage_field(usage: Any, key: str) -> Any:
@@ -153,7 +130,7 @@ class OpenAIChatCompletionsClient(
     """Wrapper for Chat Completions API via AsyncOpenAI client."""
 
     def setup_client(self, config: ClientConfig) -> AsyncOpenAI:
-        return setup_openai_client(config)
+        pass
 
     async def close(self) -> None:
         await self.client.close()

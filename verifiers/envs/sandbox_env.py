@@ -52,15 +52,10 @@ class SandboxMonitorRubric(vf.Rubric):
         self.add_metric(self.sandbox_command_execution_time)
 
     async def sandbox_ready_wait_time(self, state: vf.State) -> float:
-        return state["sandbox_state"]["ready_wait_time"]
+        pass
 
     async def sandbox_command_execution_time(self, state: vf.State) -> float:
-        command_execution_times = state["sandbox_state"]["command_execution_times"]
-        return (
-            sum(command_execution_times) / len(command_execution_times)
-            if len(command_execution_times) > 0
-            else 0.0
-        )
+        pass
 
 
 class SandboxEnv(vf.StatefulToolEnv):
@@ -157,43 +152,7 @@ class SandboxEnv(vf.StatefulToolEnv):
         working_dir: str | None = None,
     ) -> str:
         """Execute `command` inside persistent sandbox container."""
-        # sandbox_id is passed via update_tool_args, not seen by model
-        if not sandbox_state["ready"]:
-            await self._wait_for_sandbox_ready(sandbox_state, sandbox_id)
-
-        s = time.time()
-        self.logger.debug(f"Executing command {command} in sandbox {sandbox_id}")
-        try:
-            results = await self.sandbox_client.execute_command(
-                sandbox_id,
-                command,
-                working_dir=working_dir,
-                timeout=self.timeout_per_command_seconds,
-            )
-        except CommandTimeoutError:
-            timeout_msg = f"Command timed out after {self.timeout_per_command_seconds}s"
-            self.logger.warning(f"{timeout_msg} in sandbox {sandbox_id}")
-            sandbox_state["command_execution_times"].append(
-                self.timeout_per_command_seconds
-            )
-            return f"Error: {timeout_msg}"
-        except Exception as e:
-            raise vf.SandboxError from e
-        command_execution_time = time.time() - s
-        sandbox_state["command_execution_times"].append(command_execution_time)
-        stdout = results.stdout.strip()
-        stderr = (results.stderr or "").strip()
-        combined = stdout
-        if stderr:
-            if combined:
-                combined = f"{combined}\nstderr:\n{stderr}"
-            else:
-                combined = f"stderr:\n{stderr}"
-        output = combined or "(no output)"
-        self.logger.debug(
-            f"Executed command in {command_execution_time:.1f}s. Got output: {output}"
-        )
-        return output
+        pass
 
     async def post_rollout(self, state: vf.State):
         """
@@ -204,21 +163,7 @@ class SandboxEnv(vf.StatefulToolEnv):
 
     @vf.cleanup
     async def destroy_sandbox(self, state: vf.State):
-        await self.post_rollout(state)
-        sandbox_id = state.get("sandbox_id")
-        if sandbox_id is None:
-            return
-
-        async def _delete_sandbox(sandbox_id: str):
-            await self.sandbox_client.delete(sandbox_id)
-            self.active_sandboxes.discard(sandbox_id)
-            self.logger.debug(f"Deleted sandbox {sandbox_id}")
-
-        try:
-            await self.with_retry(_delete_sandbox)(sandbox_id)
-        except Exception as e:
-            # only warn, not raise an error on deletion
-            self.logger.warning(f"Failed to delete sandbox {sandbox_id}: {e}")
+        pass
 
     def get_sandbox_request(self, state: vf.State) -> CreateSandboxRequest:
         """Return sandbox request for this rollout. Override to customize per-state."""
@@ -258,12 +203,7 @@ class SandboxEnv(vf.StatefulToolEnv):
 
     async def bulk_delete_sandboxes(self, global_ids: list[str]) -> None:
         """Delete multiple sandboxes by their global IDs"""
-        try:
-            await self.with_retry(self.sandbox_client.bulk_delete)(global_ids)
-            self.logger.debug(f"Bulk deleted sandboxes: {global_ids}")
-            self.active_sandboxes.difference_update(global_ids)
-        except Exception as e:
-            self.logger.error(f"Failed to bulk delete sandboxes {global_ids}: {e}")
+        pass
 
     @vf.teardown
     async def teardown_sandboxes(self):
@@ -272,25 +212,7 @@ class SandboxEnv(vf.StatefulToolEnv):
         Uses the synchronous SandboxClient for teardown to avoid event loop issues
         during signal handling and interpreter shutdown.
         """
-        if len(self.active_sandboxes) == 0:
-            return
-        self.logger.info(f"Deleting {len(self.active_sandboxes)} remaining sandboxes")
-
-        # Use sync client for teardown - avoids event loop issues during shutdown
-        sync_client = SandboxClient(APIClient())
-        sandbox_ids = list(self.active_sandboxes)
-
-        # Delete in batches of 100
-        batch_size = 100
-        for i in range(0, len(sandbox_ids), batch_size):
-            batch = sandbox_ids[i : i + batch_size]
-            try:
-                sync_client.bulk_delete(sandbox_ids=batch)
-                for sandbox_id in batch:
-                    self.active_sandboxes.discard(sandbox_id)
-                self.logger.debug(f"Bulk deleted batch of {len(batch)} sandboxes")
-            except Exception as e:
-                self.logger.warning(f"Bulk delete failed for batch: {e}")
+        pass
 
     @vf.teardown
     async def teardown_sandbox_client(self):
